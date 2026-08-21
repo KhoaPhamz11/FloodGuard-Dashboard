@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Guard AIoT - Dashboard</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="src/css/dashboard.css">
+    <!-- Chart.js CDN -->
+    <script src = "https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class = "dashboard-container">
+        <header class = "dashboard-header">
+            <h1>🌊 Flood Guard AIoT - Hệ thống cảnh báo lũ</h1>
+            <div class = "header-time" id = "currentTime"></div>
+        </header>
+
+        <!--Part 1: Grid 3x3 shows 9 areas-->
+        <section class = "station-grid" id = "stationGrid">
+            <!-- The 9 area cells will be dynamically generated using JavaScript -->
+        </section>
+
+        <!--Part 2: Charts and Dropdown-->
+        <section class = "chart-section">
+            <div class = "chart-controls">
+                <select id="chartType" class="chart-select">
+                    <option value="rainfall">Lượng mưa</option>
+                    <option value="waterLevel">Mực nước</option>
+                    <option value="temperature">Nhiệt độ</option>
+                    <option value="humidity">Độ ẩm</option>
+                    <option value="pressure">Áp suất</option>
+                </select>
+
+                <div class="chart-mode">
+                    <button id="modeRealtime" class="mode-btn active">Realtime</button>
+                    <button id="modeHistory" class="mode-btn">6 giờ</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="stationChart"></canvas>
+            </div>
+        </section>
+
+        <!--Part 3: Notification list-->
+        <section class="alert-selection">
+            <h3>📢 Thông báo hệ thống</h3>
+            <ul class="alert-list" id="alertList">
+                <li class="alert-item info">🟢 Hệ thống đang hoạt động bình thường</li>
+            </ul>
+        </section>
+    </div>
+    
+    <script src="src/js/app.js"></script>
+    <script src="src/js/dashboard.js"></script>
+    <script src="src/js/chartHandler.js"></script>
+    <script src="src/js/stationManager.js"></script>
+    <script src="src/js/alertManager.js"></script>
+</body>
+</html>
