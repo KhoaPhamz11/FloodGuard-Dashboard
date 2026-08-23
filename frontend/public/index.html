@@ -7,50 +7,48 @@
     <link rel="stylesheet" href="src/css/style.css">
     <link rel="stylesheet" href="src/css/dashboard.css">
     <!-- Chart.js CDN -->
-    <script src = "https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class = "dashboard-container">
-        <header class = "dashboard-header">
+    <div class="dashboard-container">
+        <header class="dashboard-header">
             <h1>🌊 Flood Guard AIoT - Hệ thống cảnh báo lũ</h1>
-            <div class = "header-time" id = "currentTime"></div>
+            <div class="header-time" id="currentTime"></div>
         </header>
 
         <!--Part 1: Grid 3x3 shows 9 areas-->
-        <section class = "station-grid" id = "stationGrid">
-            <!-- The 9 area cells will be dynamically generated using JavaScript -->
+        <section class="stations-grid" id="stationsGrid">
+            <!-- 9 ô trạm sẽ được tạo động bằng JavaScript -->
         </section>
 
         <!--Part 2: Charts and Dropdown-->
-        <section class = "chart-section">
-            <div class = "chart-controls">
-                <select id="chartType" class="chart-select">
-                    <option value="rainfall">Lượng mưa</option>
-                    <option value="waterLevel">Mực nước</option>
-                    <option value="temperature">Nhiệt độ</option>
-                    <option value="humidity">Độ ẩm</option>
-                    <option value="pressure">Áp suất</option>
+        <section class="chart-section">
+            <div class="chart-controls">
+                <select id="chart-mode-select" class="chart-select">
+                    <option value="realtime-rain">🌧️ Lượng mưa Realtime</option>
+                    <option value="realtime-drainage">🚰 Thoát nước Realtime</option>
+                    <option value="realtime-tide">🌊 Thủy triều Realtime</option>
+                    <option value="history-rain-6h">📊 Lượng mưa 6 tiếng</option>
+                    <option value="history-tide-6h">📈 Thủy triều 6 tiếng</option>
                 </select>
-
-                <div class="chart-mode">
-                    <button id="modeRealtime" class="mode-btn active">Realtime</button>
-                    <button id="modeHistory" class="mode-btn">6 giờ</button>
-                </div>
+                <select id="station-select" class="station-select">
+                    <!-- Sẽ được tạo động từ JS -->
+                </select>
             </div>
             <div class="chart-wrapper">
-                <canvas id="stationChart"></canvas>
+                <canvas id="flood-chart-canvas"></canvas>
             </div>
         </section>
 
         <!--Part 3: Notification list-->
-        <section class="alert-selection">
+        <section class="alert-section">
             <h3>📢 Thông báo hệ thống</h3>
-            <ul class="alert-list" id="alertList">
-                <li class="alert-item info">🟢 Hệ thống đang hoạt động bình thường</li>
+            <ul class="notification-feed" id="notification-feed">
+                <li class="alert-item status-safe">🟢 Hệ thống đang hoạt động bình thường</li>
             </ul>
         </section>
     </div>
-    
+
     <script src="src/js/app.js"></script>
     <script src="src/js/dashboard.js"></script>
     <script src="src/js/chartHandler.js"></script>
