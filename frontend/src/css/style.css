@@ -5,15 +5,15 @@
     box-sizing: border-box;
 }
 
-body{
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #0a0e27;
     color: #ffffff;
     min-height: 100vh;
     padding: 20px;
 }
 
-.dashboard-container{
+.dashboard-container {
     max-width: 1440px;
     margin: 0 auto;
     display: flex;
@@ -22,7 +22,7 @@ body{
 }
 
 /* Header */
-.dashboard-header{
+.dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -32,23 +32,296 @@ body{
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.dashboard-header h1{
+.dashboard-header h1 {
     font-size: 24px;
     font-weight: 600;
     background: linear-gradient(90deg, #00d4ff, #7b2ffc);
-
-    background-clip: text;
-
+    /* Vendor prefix cho trình duyệt cũ */
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-
+    /* Thuộc tính chuẩn */
+    background-clip: text;
+    /* Fallback cho trình duyệt không hỗ trợ */
+    color: #00d4ff;
 }
 
-.header-time{
+.header-time {
     font-size: 14px;
     color: #8892b0;
     background: rgba(255, 255, 255, 0.05);
     padding: 8px 16px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Layout tổng thể với Flexbox */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Phần 1: Chiếm 1/2 chiều cao */
+.stations-grid {
+    flex: 1;
+    min-height: 300px;
+}
+
+/* Phần 2 và 3: Chia 2/3 - 1/3 */
+.chart-section {
+    flex: 2;
+    min-height: 250px;
+}
+
+.alert-section {
+    flex: 1;
+    min-height: 150px;
+}
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 12px 15px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 18px;
+    }
+    
+    .header-time {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+    
+    /* Điều chỉnh layout cho mobile */
+    .stations-grid {
+        min-height: 200px;
+    }
+    
+    .chart-section {
+        min-height: 200px;
+    }
+    
+    .alert-section {
+        min-height: 120px;
+    }
+}
+
+/* Hiệu ứng hover cho các ô trạm */
+.station-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.station-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Scrollbar tùy chỉnh cho toàn bộ trang */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00d4ff, #7b2ffc);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #00b8e6, #6a2ad4);
+}
+
+/* Animation loading cho các ô */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.station-card.loading {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Tooltip cho các giá trị */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    font-size: 12px;
+    border-radius: 5px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+/* Hiệu ứng cho thông báo mới */
+.alert-item {
+    transition: all 0.3s ease;
+}
+
+.alert-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+}
+
+/* Trạng thái focus cho select */
+.chart-select:focus,
+.station-select:focus {
+    outline: none;
+    border-color: #7b2ffc;
+    box-shadow: 0 0 20px rgba(123, 47, 252, 0.2);
+}
+
+/* Custom checkbox/radio nếu có sau này */
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: #7b2ffc;
+}
+
+/* Badge cho trạng thái */
+.status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.safe {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+}
+
+.status-badge.advisory {
+    background: rgba(74, 158, 255, 0.2);
+    color: #4a9eff;
+}
+
+.status-badge.warning {
+    background: rgba(255, 183, 0, 0.2);
+    color: #ffb700;
+}
+
+.status-badge.critical {
+    background: rgba(255, 0, 64, 0.2);
+    color: #ff0040;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Grid layout cho các phần */
+@media (min-width: 1024px) {
+    .dashboard-container {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 20px;
+    }
+    
+    /* Phần 1 + 2 + 3 theo đúng thiết kế */
+    .stations-grid {
+        grid-row: 1;
+    }
+    
+    /* Phần 2 và 3 nằm cùng hàng */
+    .bottom-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        grid-row: 2;
+    }
+}
+
+/* Dark mode support - đã có sẵn */
+@media (prefers-color-scheme: light) {
+    body {
+        background: #f0f2f5;
+        color: #1a1f4e;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    }
+    
+    .station-card {
+        background: rgba(0, 0, 0, 0.03);
+    }
+    
+    .chart-select,
+    .station-select {
+        background: rgba(0, 0, 0, 0.05);
+        color: #1a1f4e;
+    }
+    
+    .header-time {
+        color: #5a5f7a;
+        background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .alert-section h3 {
+        color: #5a5f7a;
+    }
+    
+    .station-rate {
+        color: #5a5f7a;
+    }
+}
+
+/* In ấn */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+    
+    .station-card {
+        break-inside: avoid;
+        border: 1px solid #ddd;
+    }
+    
+    .dashboard-header {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+    
+    .chart-section,
+    .alert-section {
+        border: 1px solid #ddd;
+    }
 }
