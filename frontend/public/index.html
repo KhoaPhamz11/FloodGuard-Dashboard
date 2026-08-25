@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flood Guard AIoT - Dashboard</title>
-    <link rel="stylesheet" href="src/css/style.css">
-    <link rel="stylesheet" href="src/css/dashboard.css">
+    <link rel="stylesheet" href="../src/css/style.css">
+    <link rel="stylesheet" href="../src/css/dashboard.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -21,38 +21,41 @@
             <!-- 9 ô trạm sẽ được tạo động bằng JavaScript -->
         </section>
 
-        <!--Part 2: Charts and Dropdown-->
-        <section class="chart-section">
-            <div class="chart-controls">
-                <select id="chart-mode-select" class="chart-select">
-                    <option value="realtime-rain">🌧️ Lượng mưa Realtime</option>
-                    <option value="realtime-drainage">🚰 Thoát nước Realtime</option>
-                    <option value="realtime-tide">🌊 Thủy triều Realtime</option>
-                    <option value="history-rain-6h">📊 Lượng mưa 6 tiếng</option>
-                    <option value="history-tide-6h">📈 Thủy triều 6 tiếng</option>
-                </select>
-                <select id="station-select" class="station-select">
-                    <!-- Sẽ được tạo động từ JS -->
-                </select>
-            </div>
-            <div class="chart-wrapper">
-                <canvas id="flood-chart-canvas"></canvas>
-            </div>
-        </section>
+        <!-- Bottom Section: Chart and Notifications -->
+        <div class="bottom-section">
+            <!--Part 2: Charts and Dropdown-->
+            <section class="chart-section">
+                <div class="chart-controls">
+                    <select id="chart-mode-select" class="chart-select">
+                        <option value="realtime-rain">🌧️ Lượng mưa Realtime</option>
+                        <option value="realtime-drainage">🚰 Thoát nước Realtime</option>
+                        <option value="realtime-tide">🌊 Thủy triều Realtime</option>
+                        <option value="history-rain-6h">📊 Lượng mưa 6 tiếng</option>
+                        <option value="history-tide-6h">📈 Thủy triều 6 tiếng</option>
+                    </select>
+                    <select id="station-select" class="station-select">
+                        <!-- Sẽ được tạo động từ JS -->
+                    </select>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="flood-chart-canvas"></canvas>
+                </div>
+            </section>
 
-        <!--Part 3: Notification list-->
-        <section class="alert-section">
-            <h3>📢 Thông báo hệ thống</h3>
-            <ul class="notification-feed" id="notification-feed">
-                <li class="alert-item status-safe">🟢 Hệ thống đang hoạt động bình thường</li>
-            </ul>
-        </section>
+            <!--Part 3: Notification list-->
+            <section class="alert-section">
+                <h3>📢 Thông báo hệ thống</h3>
+                <ul class="notification-feed" id="notification-feed">
+                    <li class="alert-item status-safe"><span class="alert-time">Bây giờ</span>🟢 Hệ thống đang hoạt động bình thường</li>
+                </ul>
+            </section>
+        </div>
     </div>
 
-    <script src="src/js/app.js"></script>
-    <script src="src/js/dashboard.js"></script>
-    <script src="src/js/chartHandler.js"></script>
-    <script src="src/js/stationManager.js"></script>
-    <script src="src/js/alertManager.js"></script>
+    <script src="../src/js/app.js"></script>
+    <script src="../src/js/dashboard.js"></script>
+    <script src="../src/js/chartHandler.js"></script>
+    <script src="../src/js/stationManager.js"></script>
+    <script src="../src/js/alertManager.js"></script>
 </body>
 </html>
