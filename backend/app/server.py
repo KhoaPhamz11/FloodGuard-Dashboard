@@ -20,10 +20,10 @@ app.add_middleware(    # Cấu hình CORS cho app: Cho phép Frontend (JavaScrip
 )
 
 # Kết nối vào MongoDB
-MONGO_URI = "mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority" # 1. Dán chuỗi kết nối lấy từ MongoDB Atlas vào đây
+MONGO_URI = "mongodb+srv://pineapple130306_db_user:siinario123@test.nuzu7tt.mongodb.net/?appName=test" # 1. Dán chuỗi kết nối lấy từ MongoDB Atlas vào đây
 client = MongoClient(MONGO_URI)        # 2. Khởi tạo kết nối qua đường link Cloud
 db = client["floodguard_db"]           # Đổi tên nếu nhóm bạn đặt tên DB khác
-collection = db["simulation_data"]     # Đổi tên nếu nhóm bạn đặt tên Collection khác
+collection = db["sensor_data"]     # Đổi tên nếu nhóm bạn đặt tên Collection khác
 
 
 """
@@ -56,3 +56,17 @@ def get_history_data():
         r["_id"] = str(r["_id"])
     records.reverse()   # Vì lấy giảm dần (mới nhất đứng đầu 360,359,358..), ta cần đảo ngược list lại (reverse) để khi Frontend vẽ biểu đồ Chart.js, thời gian sẽ chạy từ trái (cũ) sang phải (mới)
     return records
+
+# Serve Frontend Static Files
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Construct absolute paths to the frontend directories
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_PUBLIC = os.path.join(BASE_DIR, "../../frontend/public")
+FRONTEND_SRC = os.path.join(BASE_DIR, "../../frontend/src")
+
+# Mount /src so index.html can load css/js
+app.mount("/src", StaticFiles(directory=FRONTEND_SRC), name="src")
+# Mount / (root) to serve index.html
+app.mount("/", StaticFiles(directory=FRONTEND_PUBLIC, html=True), name="public")
