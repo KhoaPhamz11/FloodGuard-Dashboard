@@ -53,8 +53,8 @@ function selectStation(stationId) {                                             
     currentSelectedStationId = stationId;                                        // Lưu lại ID trạm vừa chọn
                          
     for (let i = 1; i <= 9; i++) {                                               // Gỡ bỏ hiệu ứng "đang được chọn" (viền sáng) ở
-        if (card) {                                                              //  đây phải duyệt qua 9 thằng vì sẽ không biết thằng được chọn trước đó là thằng nào.
         const card = document.getElementById(`station-card-${i}`);   
+        if (card) {                                                              //  đây phải duyệt qua 9 thằng vì sẽ không biết thằng được chọn trước đó là thằng nào.
             card.classList.remove("station-selected");
         }
     }
@@ -63,8 +63,8 @@ function selectStation(stationId) {                                             
         selectedCard.classList.add("station-selected");
     }
     
-    const chartModelDropdown = document.getElementById("chart-model-select");   // Không thay đổi dropdown đọc xem người dùng hiện tại đang xem biểu đồ nào
-    let currentChartType = "realtime - rain";                                   //Giá trị mặc định an toàn
+    const chartModelDropdown = document.getElementById("chart-mode-select");   // Không thay đổi dropdown đọc xem người dùng hiện tại đang xem biểu đồ nào
+    let currentChartType = "realtime-rain";                                   //Giá trị mặc định an toàn
 
     if (chartModelDropdown) {                                                   
         currentChartType = chartModelDropdown.value;
