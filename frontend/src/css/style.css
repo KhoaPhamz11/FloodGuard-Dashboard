@@ -250,13 +250,17 @@ input[type="radio"] {
 @media (min-width: 1024px) {
     .dashboard-container {
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto auto auto;
         gap: 20px;
     }
     
-    /* Phần 1 + 2 + 3 theo đúng thiết kế */
-    .stations-grid {
+    .dashboard-header {
         grid-row: 1;
+    }
+
+    /* Phần 1: Khung 9 ô */
+    .stations-grid {
+        grid-row: 2;
     }
     
     /* Phần 2 và 3 nằm cùng hàng */
@@ -264,7 +268,7 @@ input[type="radio"] {
         display: grid;
         grid-template-columns: 2fr 1fr;
         gap: 20px;
-        grid-row: 2;
+        grid-row: 3;
     }
 }
 
