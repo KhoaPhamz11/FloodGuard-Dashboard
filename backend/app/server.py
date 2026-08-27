@@ -20,9 +20,9 @@ app.add_middleware(    # Cấu hình CORS cho app: Cho phép Frontend (JavaScrip
 )
 
 # Kết nối vào MongoDB
-MONGO_URI = "mongodb+srv://pineapple130306_db_user:siinario123@test.nuzu7tt.mongodb.net/?appName=test" # 1. Dán chuỗi kết nối lấy từ MongoDB Atlas vào đây
+MONGO_URI = "mongodb+srv://pineapple130306_db_user:siinario123@test.nuzu7tt.mongodb.net/?retryWrites=true&w=majority" # 1. Dán chuỗi kết nối lấy từ MongoDB Atlas vào đây
 client = MongoClient(MONGO_URI)        # 2. Khởi tạo kết nối qua đường link Cloud
-db = client["floodguard_db"]           # Đổi tên nếu nhóm bạn đặt tên DB khác
+db = client["flood_monitoring"]           # Đổi tên nếu nhóm bạn đặt tên DB khác
 collection = db["sensor_data"]     # Đổi tên nếu nhóm bạn đặt tên Collection khác
 
 

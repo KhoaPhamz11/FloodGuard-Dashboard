@@ -9,76 +9,79 @@ addEventListener("click") để lắng nghe cú click chuột của người dù
 
 let currentSelectedStationId = 1;  // Biến lưu trạng thái xem người dùng đang click chọn trạm nào (mặc định mở web lên là trạm 1)
 
+// HÀM MỚI THÊM VÀO (lần sửa trước): TẠO SẴN KHUNG HTML CHO 9 Ô TRẠM
+// HTML để trống #stationsGrid và ghi chú "sẽ tạo động bằng JavaScript" nhưng không có hàm nào làm việc đó,
+// nên card luôn = null, updateStationCards()/initStationClickEvents() bên dưới không tìm thấy gì để chạy.
+// Được gọi 1 lần lúc khởi động, TRƯỚC initStationClickEvents() (xem app.js, hàm initDashboard()).
+function createStationCards() {
+    const grid = document.getElementById("stationsGrid");           // Tìm khung lưới 3x3 khai báo trong index.html
+    if (!grid) return;                                               // Nếu chưa có khung này thì thoát ra an toàn
+
+    for (let i = 1; i <= 9; i++) {                                   // Tạo đúng 9 thẻ với ID mà các hàm bên dưới đang tìm (station-card-1 ... station-card-9)
+        const card = document.createElement("div");
+        card.className = "station-card";                            // Class mặc định, màu trạng thái sẽ do updateStationCards() thêm vào khi có data
+        card.id = `station-card-${i}`;
+
+        card.innerHTML = `
+            <div class="station-name">Trạm ${i}</div>
+            <div class="station-depth">Độ sâu: <span id="depth-val-${i}">--</span> m</div>
+            <div class="station-rate">Tốc độ dâng: <span id="rate-val-${i}">--</span> m/phút</div>
+            <div class="station-risk" id="risk-val-${i}">--</div>
+            <div class="station-status-text">Đang chờ dữ liệu...</div>
+        `;
+
+        grid.appendChild(card);                                      // Dán thẻ trạm vào khung lưới
+    }
+}
+
+// HÀM MỚI THÊM VÀO (lần này): Mongo lưu tên trạm dạng chuỗi "station_1".."station_9" (field station_name),
+// KHÔNG có field số station_id như code cũ giả định. Hàm này bóc số ra từ chuỗi để khớp với
+// id="station-card-1"..."station-card-9" đã tạo ở createStationCards() phía trên.
+// Dùng chung cho cả chart.js và notification.js (gọi trực tiếp vì stations.js được nạp trước 2 file đó trong index.html).
+function getStationNumericId(station) {
+    return parseInt(station.station_name.split("_")[1], 10);
+}
+
+// HÀM MỚI THÊM VÀO (lần này): Mongo trả field "code" (số, ví dụ 0) thay vì chữ "SAFE"/"ADVISORY"/"WARNING"/"CRITICAL"
+// như code cũ giả định (station.status thật ra là tiếng Việt "An toàn", không dùng để so sánh được).
+// Hàm này dịch code số sang đúng 4 mức mà CSS (status-safe, status-advisory, status-warning, status-critical) đang cần.
+// QUY ƯỚC TẠM: 0 = An toàn, 1 = Cảnh báo nhẹ, 2 = Cảnh báo, 3 = Nguy hiểm
+// -> NHÓM KIỂM TRA LẠI cho khớp đúng thang code thật bên xử lý dữ liệu (S_risk/T_crit_min), sửa lại map bên dưới nếu khác.
+function getStatusFromCode(code) {
+    const map = { 0: "SAFE", 1: "ADVISORY", 2: "WARNING", 3: "CRITICAL" };
+    return map[code] !== undefined ? map[code] : "SAFE";
+}
+
 function updateStationCards(stationsData) {   // HÀM 1: CẬP NHẬT SỐ LIỆU VÀ MÀU SẮC 9 Ô (Hàm này sẽ được gọi mỗi giây bởi app.js khi có data mới) với station data là dữ liệu của mảng gồm 9 object ứng với thông tin của 9 trạm.
     stationsData.forEach(station => {       
-        const id = station.station_id;                                  // Khi duyệt qua id thứ i thì gán id đó cho biến 'id'
+        const id = getStationNumericId(station);                        // SỬA: lấy id số từ station_name (station.station_id không tồn tại trong data thật)
         const card = document.getElementById(`station-card-${id}`);     // tìm trong html card của trạm có id ứng với 'id' đã gán vào biến card.
         const depthVal = document.getElementById(`depth-val-${id}`);    // tìm trong html độ sâu có id ứng với 'id' đã gán vào biến depthVal
         const rateVal = document.getElementById(`rate-val-${id}`);      // tìm trong html tốc độ dâng có id ứng với 'id' đã gán vào biến rateVal
         const riskVal = document.getElementById(`risk-val-${id}`);      // tìm trong html risk score có id ứng với 'id' đã gán vào biến riskVal
         if (!card) return;                                              // Nếu HTML chưa viết xong thẻ này thì bỏ qua để không báo lỗi
 
-      
-        if (depthVal) depthVal.textContent = station.depth_H;           // Nếu biến DepthVal có tồn tại thì gán vào biến depth_H của station thứ i và đưa lên trên màn hình.
-        if (rateVal) rateVal.textContent = station.rise_rate_V;         // Nếu biến rateVal có tồn tại thì gán vào biến rise_rase_V của station thứ i và đưa lên trên màn hình.
-        if (riskVal) riskVal.textContent = station.risk_score;          // Nếu biến riskVal có tồn tại thì gán vào biến risk_score của station thứ i và đưa lên trên màn hình.
+        if (depthVal) depthVal.textContent = Number(station.H).toFixed(2);       // SỬA: field thật là 'H' (không phải depth_H); toFixed(2) cho khỏi lòi số thập phân dài
+        if (rateVal) rateVal.textContent = Number(station.V).toFixed(2);         // SỬA: field thật là 'V' (không phải rise_rate_V)
+        if (riskVal) riskVal.textContent = Number(station.S_risk).toFixed(2);    // SỬA: field thật là 'S_risk' (không phải risk_score)
+
+        const status = getStatusFromCode(station.code);                 // SỬA: suy ra SAFE/ADVISORY/WARNING/CRITICAL từ 'code' thay vì đọc thẳng station.status
 
         // 3. Xử lý đổi màu theo trạng thái (Hợp đồng Class)
         card.classList.remove("status-safe", "status-advisory", "status-warning", "status-critical");     // Bước A: Lột sạch các class màu cũ đi
-        if (station.status === "SAFE") {                  // Bước B: Mặc áo mới tùy theo status hiện tại
+        if (status === "SAFE") {                  // Bước B: Mặc áo mới tùy theo status hiện tại
             card.classList.add("status-safe");            // Nếu status là an toàn thì thêm thẻ safe
-        } else if (station.status === "ADVISORY") {       // Nếu status là cảnh báo nhẹ thì thêm thẻ advisory
+        } else if (status === "ADVISORY") {       // Nếu status là cảnh báo nhẹ thì thêm thẻ advisory
             card.classList.add("status-advisory");       
-        } else if (station.status === "WARNING") {        // Nếu status là cánh báo thì thêm thẻ warning                                
+        } else if (status === "WARNING") {        // Nếu status là cánh báo thì thêm thẻ warning                                
             card.classList.add("status-warning");
-        } else if (station.status === "CRITICAL") {       // Nếu status là cánh báo nguy hiểm thì thêm thẻ critical
+        } else if (status === "CRITICAL") {       // Nếu status là cánh báo nguy hiểm thì thêm thẻ critical
             card.classList.add("status-critical");
         }
     });
 }
 
-function buildStationCardsAndDropdown() {
-    const grid = document.getElementById("stationsGrid");
-    const select = document.getElementById("station-select");
-    if (!grid) return;
-
-    grid.innerHTML = "";
-    if (select) select.innerHTML = "";
-
-    for (let i = 1; i <= 9; i++) {
-        // Build card
-        const card = document.createElement("div");
-        card.className = "station-card status-safe";
-        card.id = `station-card-${i}`;
-        
-        card.innerHTML = `
-            <h3>Trạm ${i}</h3>
-            <div class="station-metrics">
-                <p>Mực nước ngập: <span id="depth-val-${i}">0</span> m</p>
-                <p>Tốc độ dâng: <span id="rate-val-${i}">0</span> m/s</p>
-                <p>Rủi ro: <span id="risk-val-${i}">0</span></p>
-            </div>
-        `;
-        grid.appendChild(card);
-
-        // Build option
-        if (select) {
-            const option = document.createElement("option");
-            option.value = i;
-            option.textContent = `Trạm ${i}`;
-            select.appendChild(option);
-        }
-    }
-    
-    if (select) {
-        select.addEventListener("change", (e) => {
-            selectStation(parseInt(e.target.value));
-        });
-    }
-}
-
 function initStationClickEvents() {     // HÀM 2: LẮNG NGHE SỰ KIỆN CLICK CHUỘT (Hàm này chỉ chạy 1 lần duy nhất khi web vừa load xong)
-    buildStationCardsAndDropdown();
     for (let i = 1; i <= 9; i++) {                                  // Hàm này tìm 9 cái thẻ của 9 trạm, rồi gắn sự kiện click chuột cho từng cái card.
         const card = document.getElementById(`station-card-${i}`);
         if (card) {
