@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +9,6 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
     <div class="dashboard-container">
         <header class="dashboard-header">
@@ -48,18 +46,21 @@
             <section class="alert-section">
                 <h3>📢 Thông báo hệ thống</h3>
                 <ul class="notification-feed" id="notification-feed">
-                    <li class="alert-item status-safe"><span class="alert-time">Bây giờ</span>🟢 Hệ thống đang hoạt động
-                        bình thường</li>
+                    <li class="alert-item status-safe"><span class="alert-time">Bây giờ</span>🟢 Hệ thống đang hoạt động bình thường</li>
                 </ul>
             </section>
         </div>
     </div>
 
+    <!-- SỬA LỖI: 5 dòng script bên dưới trước đây trỏ sai tên file (dashboard.js, chartHandler.js,
+         stationManager.js, alertManager.js không tồn tại) và THIẾU hẳn api.js.
+         => api.js không được nạp nên fetchLatestData()/fetchHistoryData() bị "undefined",
+         => chart.js, stations.js, notification.js cũng không được nạp nên toàn bộ giao diện không chạy.
+         Đã đổi lại đúng tên 5 file thực tế, giữ nguyên thứ tự logic (api -> app -> stations -> chart -> notification). -->
     <script src="../src/js/api.js"></script>
+    <script src="../src/js/app.js"></script>
     <script src="../src/js/stations.js"></script>
     <script src="../src/js/chart.js"></script>
     <script src="../src/js/notification.js"></script>
-    <script src="../src/js/app.js"></script>
 </body>
-
 </html>

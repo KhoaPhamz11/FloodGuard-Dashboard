@@ -6,7 +6,9 @@ let updateInterval; // Biến lưu trữ đồng hồ đếm nhịp
 
 async function initDashboard() {                                                            // HÀM 1: KHỞI TẠO HỆ THỐNG KHI MỞ WEB
     console.log("Đang khởi tạo Dashboard FloodGuard...");                                   
-   
+
+    if (typeof createStationCards === "function") createStationCards();                     // DÒNG MỚI THÊM: phải tạo khung HTML cho 9 ô trạm trước tiên (hàm mới, viết trong stations.js),
+                                                                                              // nếu không thì initStationClickEvents() và updateStationCards() bên dưới sẽ không tìm thấy thẻ nào để gắn vào
     if (typeof initStationClickEvents === "function") initStationClickEvents();             // Đánh thức các sự kiện lắng nghe (Click chuột, đổi dropdown)
     if (typeof initChartEvents === "function") initChartEvents();
 
@@ -22,7 +24,7 @@ async function initDashboard() {                                                
 // HÀM 2: PHÂN PHỐI DỮ LIỆU CHO 3 MODULE (PHẦN 1, 2, 3)
 function updateDashboardUI(latestData) {  
     if (typeof updateStationCards === "function") {                  // Gọi Phần 1: Cập nhật 9 ô cảnh báo (Lưu ý: stations.js chỉ cần mảng 'stations')
-        updateStationCards(latestData.stations);
+        updateStationCards(latestData.stations_data);                // SỬA: Mongo đặt tên field thật là 'stations_data', không phải 'stations'
     }
     if (typeof updateRealtimeChart === "function") {                 // Gọi Phần 2: Cập nhật biểu đồ Realtime
         updateRealtimeChart(latestData);

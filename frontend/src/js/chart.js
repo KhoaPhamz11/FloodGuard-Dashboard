@@ -41,13 +41,13 @@ async function renderHistoryChart(stationId, chartType) {             // HÀM 3:
     const dataPoints = [];
 // Khúc này là thêm điểm lên biểu đồ.
     historyData.forEach(minuteData => {                                        // Duyệt qua từng objects trong data, đặt tên cho từng thằng objects là minutedata
-        labels.push(minuteData.datetime_str); // Trục X là thời gian           // Nhãn ban đầu rỗng, mình đẩy thời gian vào nhãn tương đương với trục x. LƯU Ý KHÚC NÀY CẦN XÁC NHẬN LẠI CẤU TRÚC FILE JSON.
-        const station = minuteData.stations.find(s => s.station_id === stationId);    // Trong danh sách các trạm trong 1 objects/1 phút (minuteData.stations), tìm trạm nào coi có id trùng với id của trạm đang được chọn.
+        labels.push(minuteData.timestamp); // Trục X là thời gian          // SỬA: field thật là 'timestamp' (không phải datetime_str)
+        const station = minuteData.stations_data.find(s => getStationNumericId(s) === stationId);    // SỬA: field thật là 'stations_data' + so sánh bằng id số suy từ station_name (hàm getStationNumericId viết trong stations.js)
         if (station) {                                                                
             if (chartType === "history-rain-6h") {                                    // Nếu biểu đồ đang là lượng mưa trong 6h thì
-                dataPoints.push(station.rainfall_R);                                  // Thêm điểm mới vào cuối trục y ứng với lượng mưa của trạm có id trùng. 
+                dataPoints.push(station.R);                                           // SỬA: field thật là 'R' (không phải rainfall_R)
             } else if (chartType === "history-tide-6h") {                             // Nếu biểu đồ là thuỷ triều trong 6h thì 
-                dataPoints.push(station.tide_H);                                      // Thêm điểm mới vào cuối trục tung y ứng với thuỷ triều của trạm có id trùng.
+                dataPoints.push(station.H_tide);                                      // SỬA: field thật là 'H_tide' (không phải tide_H)
             }
         }
     });
@@ -118,21 +118,19 @@ function initRealtimeChart(chartType) {                        // HÀM 4: KHỞI
 function updateRealtimeChart(latestData) {                      // HÀM 5: BƠM DỮ LIỆU VÀO BIỂU ĐỒ REALTIME (GỌI MỖI GIÂY)
    
     if (!floodChart || currentChartType.includes("history")) return;                          // Nếu chưa có biểu đồ, hoặc đang xem lịch sử thì không làm gì cả
-    const station = latestData.stations.find(s => s.station_id === currentChartStationId);   // Tìm đúng thông số của trạm đang chọn latest data là 1 objects chứa 9 trạm nên phải duyệt qua từng trạm để chọn ra trạm đang được chọn, nếu không tìm thấy thì return.
-    // Nếu là cấu trúc file Json kiểu nhét time vào từng thông tin của trạm thì có thể dùng code:
-    // const time = station.datetime_str rồi sau đó push vào label bằng cách thay đổi floodChart.data.labels.push(latestData.datetime_str);  thành floodChart.data.labels.push(time);  
+    const station = latestData.stations_data.find(s => getStationNumericId(s) === currentChartStationId);   // SỬA: field thật là 'stations_data' + so sánh bằng id số suy từ station_name (hàm getStationNumericId viết trong stations.js)
     if (!station) return;
     
     let newValue = 0;                                                                       // Mặc định giá trị mới ban đầu =0
     if (currentChartType === "realtime-rain") {                                             // Nếu là biểu đồ lượng mưa thì newvalue là giá trị tương ứng trong object.
-        newValue = station.rainfall_R;                                                              
+        newValue = station.R;                                                               // SỬA: field thật là 'R' (không phải rainfall_R)
     } else if (currentChartType === "realtime-drainage") {                                  // Nếu biểu đồ thoát nước thì newvalue là giá trị tương ứng trong object.
-        newValue = station.drainage_D;
+        newValue = station.D;                                                               // SỬA: field thật là 'D' (không phải drainage_D)
     } else if (currentChartType === "realtime-tide") {                                      // Nếu biểu đồ thuỷ triều thì newvalue là giá trị tương ứng trong object.
-        newValue = station.tide_H;
+        newValue = station.H_tide;                                                          // SỬA: field thật là 'H_tide' (không phải tide_H)
     }
 
-    floodChart.data.labels.push(latestData.datetime_str);                                   // Đưa vào labels rỗng (trục x) đã khai báo ở trên bằng biến thời gian trong objects. LƯU Ý KHÚC NÀY CẦN XÁC NHẬN LẠI FILE JSON.
+    floodChart.data.labels.push(latestData.timestamp);                                      // SỬA: field thật là 'timestamp' (không phải datetime_str)
     floodChart.data.datasets[0].data.push(newValue);                                        // Đưa vào data rổng trong dataset (giá trị của trục y) bằng newvalue ở trên
 
     
@@ -143,4 +141,3 @@ function updateRealtimeChart(latestData) {                      // HÀM 5: BƠM 
     
     floodChart.update(); //                                                                 Ra lệnh cập nhật nét vẽ lên màn hình
 }
-
