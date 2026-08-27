@@ -37,7 +37,48 @@ function updateStationCards(stationsData) {   // HÀM 1: CẬP NHẬT SỐ LIỆ
     });
 }
 
+function buildStationCardsAndDropdown() {
+    const grid = document.getElementById("stationsGrid");
+    const select = document.getElementById("station-select");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+    if (select) select.innerHTML = "";
+
+    for (let i = 1; i <= 9; i++) {
+        // Build card
+        const card = document.createElement("div");
+        card.className = "station-card status-safe";
+        card.id = `station-card-${i}`;
+        
+        card.innerHTML = `
+            <h3>Trạm ${i}</h3>
+            <div class="station-metrics">
+                <p>Mực nước ngập: <span id="depth-val-${i}">0</span> m</p>
+                <p>Tốc độ dâng: <span id="rate-val-${i}">0</span> m/s</p>
+                <p>Rủi ro: <span id="risk-val-${i}">0</span></p>
+            </div>
+        `;
+        grid.appendChild(card);
+
+        // Build option
+        if (select) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = `Trạm ${i}`;
+            select.appendChild(option);
+        }
+    }
+    
+    if (select) {
+        select.addEventListener("change", (e) => {
+            selectStation(parseInt(e.target.value));
+        });
+    }
+}
+
 function initStationClickEvents() {     // HÀM 2: LẮNG NGHE SỰ KIỆN CLICK CHUỘT (Hàm này chỉ chạy 1 lần duy nhất khi web vừa load xong)
+    buildStationCardsAndDropdown();
     for (let i = 1; i <= 9; i++) {                                  // Hàm này tìm 9 cái thẻ của 9 trạm, rồi gắn sự kiện click chuột cho từng cái card.
         const card = document.getElementById(`station-card-${i}`);
         if (card) {
