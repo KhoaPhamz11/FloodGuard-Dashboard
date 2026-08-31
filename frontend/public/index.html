@@ -4,63 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flood Guard AIoT - Dashboard</title>
+    <!-- Leaflet CSS (PHẢI load trước style.css để tránh xung đột) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="../src/css/style.css">
     <link rel="stylesheet" href="../src/css/dashboard.css">
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header class="dashboard-header">
-            <h1>🌊 Flood Guard AIoT - Hệ thống cảnh báo lũ</h1>
-            <div class="header-time" id="currentTime"></div>
-        </header>
+    <div class="app-wrapper">
 
-        <!--Part 1: Grid 3x3 shows 9 areas-->
-        <section class="stations-grid" id="stationsGrid">
-            <!-- 9 ô trạm sẽ được tạo động bằng JavaScript -->
-        </section>
+        <!-- ===== SIDEBAR NAVIGATION ===== -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">🌊</div>
+                <div class="sidebar-title">FloodGuard</div>
+                <div class="sidebar-subtitle">Hệ thống cảnh báo ngập AIoT</div>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item active" data-layer="main">
+                    <span class="sidebar-icon">🏠</span>
+                    <span class="sidebar-text">Tổng quan</span>
+                </li>
+                <li class="sidebar-item" data-layer="fullmap">
+                    <span class="sidebar-icon">🗺️</span>
+                    <span class="sidebar-text">Bản đồ ngập</span>
+                </li>
+                <li class="sidebar-item" data-layer="stations">
+                    <span class="sidebar-icon">📡</span>
+                    <span class="sidebar-text">Trạm & Cảm biến</span>
+                </li>
+                <li class="sidebar-item" data-layer="alerts">
+                    <span class="sidebar-icon">⚠️</span>
+                    <span class="sidebar-text">Cảnh báo</span>
+                </li>
+                <li class="sidebar-item" data-layer="reports-picker">
+                    <span class="sidebar-icon">📊</span>
+                    <span class="sidebar-text">Báo cáo & Thống kê</span>
+                </li>
+            </ul>
+            <!-- Nút quay lại - ẩn khi đang ở Layer Main -->
+            <div class="sidebar-back" id="backBtn" style="display: none;">
+                <span class="sidebar-icon">◀</span>
+                <span class="sidebar-text">Quay lại</span>
+            </div>
+        </nav>
 
-        <!-- Bottom Section: Chart and Notifications -->
-        <div class="bottom-section">
-            <!--Part 2: Charts and Dropdown-->
-            <section class="chart-section">
-                <div class="chart-controls">
-                    <select id="chart-mode-select" class="chart-select">
-                        <option value="realtime-rain">🌧️ Lượng mưa Realtime</option>
-                        <option value="realtime-drainage">🚰 Thoát nước Realtime</option>
-                        <option value="realtime-tide">🌊 Thủy triều Realtime</option>
-                        <option value="history-rain-6h">📊 Lượng mưa 6 tiếng</option>
-                        <option value="history-tide-6h">📈 Thủy triều 6 tiếng</option>
-                    </select>
-                    <select id="station-select" class="station-select">
-                        <!-- Sẽ được tạo động từ JS -->
-                    </select>
+        <!-- ===== MAIN CONTENT AREA ===== -->
+        <div class="content-area">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <h1>🌊 Tổng quan tình hình ngập lụt TP. Hồ Chí Minh</h1>
+                <div class="header-time" id="currentTime"></div>
+            </header>
+
+            <!-- ===== LAYER 1: MAIN DASHBOARD ===== -->
+            <div class="layer-container layer-active" id="layer-main">
+                <div class="main-top-row">
+                    <!-- Thẻ Bản đồ -->
+                    <div class="card map-card">
+                        <div class="card-header">
+                            <h3>🗺️ Bản đồ quan trắc</h3>
+                        </div>
+                        <div class="map-container" id="main-map-container">
+                            <div id="main-map"></div>
+                        </div>
+                        <button class="btn-fullscreen" id="btnFullscreenMap">
+                            🔍 Xem toàn màn hình
+                        </button>
+                    </div>
+                    <!-- Thẻ Dự báo (để trống) -->
+                    <div class="card forecast-card">
+                        <div class="card-header">
+                            <h3>📊 Dự báo ngập theo quận/huyện</h3>
+                        </div>
+                        <div class="forecast-placeholder">
+                            <div class="forecast-placeholder-inner">
+                                <span class="placeholder-icon">🔮</span>
+                                <p>Chức năng đang được phát triển...</p>
+                                <p class="placeholder-sub">Dữ liệu dự báo sẽ được cập nhật tại đây</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="chart-wrapper">
-                    <canvas id="flood-chart-canvas"></canvas>
+                <!-- Thẻ Cảnh báo gần nhất -->
+                <div class="card notification-card">
+                    <div class="card-header">
+                        <h3>⚠️ Cảnh báo gần nhất</h3>
+                        <a class="view-all-link" id="btnViewAllAlerts" href="#">Xem tất cả cảnh báo ›</a>
+                    </div>
+                    <div class="notification-feed" id="main-notification-feed">
+                        <div class="alert-item status-safe">
+                            <span class="alert-icon" style="color: #28a745;">✅</span>
+                            <div class="alert-content">
+                                <span>🟢 Hệ thống đang hoạt động bình thường</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            <!--Part 3: Notification list-->
-            <section class="alert-section">
-                <h3>📢 Thông báo hệ thống</h3>
-                <ul class="notification-feed" id="notification-feed">
-                    <li class="alert-item status-safe"><span class="alert-time">Bây giờ</span>🟢 Hệ thống đang hoạt động bình thường</li>
-                </ul>
-            </section>
+            <!-- ===== LAYER 2: FULLSCREEN MAP ===== -->
+            <div class="layer-container" id="layer-fullmap">
+                <div class="card fullmap-card">
+                    <div class="card-header">
+                        <h3>🗺️ Bản đồ ngập lụt TP. Hồ Chí Minh</h3>
+                    </div>
+                    <div class="fullmap-container" id="fullscreen-map-container">
+                        <div id="fullscreen-map"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== LAYER 3: TẤT CẢ CẢNH BÁO ===== -->
+            <div class="layer-container" id="layer-alerts">
+                <div class="card alerts-full-card">
+                    <div class="card-header">
+                        <h3>⚠️ Tất cả cảnh báo ngập</h3>
+                    </div>
+                    <div class="alerts-full-list" id="alerts-full-list">
+                        <!-- Tạo động bằng notification.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== LAYER 4: TRẠM & CẢM BIẾN (Grid 3×3) ===== -->
+            <div class="layer-container" id="layer-stations">
+                <div class="card stations-full-card">
+                    <div class="card-header">
+                        <h3>📡 Trạm quan trắc & Cảm biến</h3>
+                    </div>
+                    <section class="stations-grid" id="stationsGrid">
+                        <!-- 9 station cards tạo bởi stations.js -->
+                    </section>
+                </div>
+            </div>
+
+            <!-- ===== LAYER 6: BÁO CÁO & THỐNG KÊ (5 biểu đồ) ===== -->
+            <div class="layer-container" id="layer-reports">
+                <div class="card reports-card">
+                    <div class="card-header">
+                        <h3>📊 Báo cáo & Thống kê — <span id="reports-station-name">--</span></h3>
+                    </div>
+                    <div class="reports-grid" id="reports-grid">
+                        <!-- 5 chart canvases tạo bởi chart.js -->
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /content-area -->
+    </div><!-- /app-wrapper -->
+
+    <!-- ===== MODAL: CHỌN TRẠM (Layer 5) ===== -->
+    <div class="modal-overlay" id="stationPickerModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📡 Chọn trạm quan trắc</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="stationPickerList">
+                <!-- 9 nút chọn trạm tạo bởi layout.js -->
+            </div>
         </div>
     </div>
 
-    <!-- SỬA LỖI: 5 dòng script bên dưới trước đây trỏ sai tên file (dashboard.js, chartHandler.js,
-         stationManager.js, alertManager.js không tồn tại) và THIẾU hẳn api.js.
-         => api.js không được nạp nên fetchLatestData()/fetchHistoryData() bị "undefined",
-         => chart.js, stations.js, notification.js cũng không được nạp nên toàn bộ giao diện không chạy.
-         Đã đổi lại đúng tên 5 file thực tế, giữ nguyên thứ tự logic (api -> app -> stations -> chart -> notification). -->
-    <script src="../src/js/api.js"></script>
-    <script src="../src/js/app.js"></script>
-    <script src="../src/js/stations.js"></script>
-    <script src="../src/js/chart.js"></script>
-    <script src="../src/js/notification.js"></script>
+    <!-- ===== SCRIPTS (thứ tự load quan trọng) ===== -->
+    <script src="../src/js/api.js"></script>          <!-- 1. API gọi backend -->
+    <script src="../src/js/stations.js"></script>      <!-- 2. Station data + helpers -->
+    <script src="../src/js/chart.js"></script>         <!-- 3. Chart rendering -->
+    <script src="../src/js/notification.js"></script>  <!-- 4. Notifications -->
+    <script src="../src/js/map.js"></script>           <!-- 5. Leaflet map (MỚI) -->
+    <script src="../src/js/layout.js"></script>        <!-- 6. Layer management (MỚI) -->
+    <script src="../src/js/app.js"></script>           <!-- 7. Main orchestrator (CUỐI CÙNG) -->
 </body>
 </html>
