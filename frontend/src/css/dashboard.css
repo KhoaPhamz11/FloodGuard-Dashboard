@@ -1,7 +1,6 @@
 /* ===================================================================
    dashboard.css — Component styles: cards, map, alerts, charts, markers
-   FloodGuard Dashboard V2
-   Giữ nguyên toàn bộ styles cũ + thêm styles mới cho V2
+   FloodGuard Dashboard V2 — Round 2
    =================================================================== */
 
 /* ===== LAYER 1: MAIN LAYOUT ===== */
@@ -12,10 +11,7 @@
 }
 
 /* --- Map Card --- */
-.map-card {
-    display: flex;
-    flex-direction: column;
-}
+.map-card { display: flex; flex-direction: column; }
 
 .map-container {
     position: relative;
@@ -23,8 +19,7 @@
     padding: 0;
 }
 
-#main-map,
-#fullscreen-map {
+#main-map, #fullscreen-map {
     width: 100%;
     height: 100%;
     z-index: 1;
@@ -53,10 +48,7 @@
 }
 
 /* --- Forecast Card (placeholder) --- */
-.forecast-card {
-    display: flex;
-    flex-direction: column;
-}
+.forecast-card { display: flex; flex-direction: column; }
 
 .forecast-placeholder {
     flex: 1;
@@ -66,9 +58,7 @@
     padding: 40px 20px;
 }
 
-.forecast-placeholder-inner {
-    text-align: center;
-}
+.forecast-placeholder-inner { text-align: center; }
 
 .placeholder-icon {
     font-size: 48px;
@@ -77,28 +67,12 @@
     opacity: 0.5;
 }
 
-.forecast-placeholder p {
-    color: #8892b0;
-    font-size: 14px;
-}
+.forecast-placeholder p { color: #8892b0; font-size: 14px; }
+.forecast-placeholder .placeholder-sub { font-size: 12px; margin-top: 6px; opacity: 0.6; }
 
-.forecast-placeholder .placeholder-sub {
-    font-size: 12px;
-    margin-top: 6px;
-    opacity: 0.6;
-}
-
-/* --- Notification Card (Layer 1 recent) --- */
-.notification-card {
-    min-height: 180px;
-    max-height: 350px;
-}
-
-.notification-card .notification-feed {
-    padding: 15px 20px;
-    max-height: 280px;
-    overflow-y: auto;
-}
+/* --- Notification Card (Layer 1) --- */
+.notification-card { min-height: 180px; max-height: 350px; }
+.notification-card .notification-feed { padding: 15px 20px; max-height: 280px; overflow-y: auto; }
 
 .view-all-link {
     color: #00d4ff;
@@ -109,139 +83,17 @@
     white-space: nowrap;
 }
 
-.view-all-link:hover {
-    color: #7b2ffc;
-    text-decoration: underline;
-}
+.view-all-link:hover { color: #7b2ffc; text-decoration: underline; }
 
 /* ===== LAYER 2: FULLSCREEN MAP ===== */
-.fullmap-card {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.fullmap-container {
-    flex: 1;
-    min-height: calc(100vh - 160px);
-}
+.fullmap-card { flex: 1; display: flex; flex-direction: column; }
+.fullmap-container { flex: 1; min-height: calc(100vh - 160px); }
 
 /* ===== LAYER 3: ALL ALERTS ===== */
-.alerts-full-card {
-    flex: 1;
-}
+.alerts-full-card { flex: 1; }
+.alerts-full-list { padding: 15px 20px; max-height: calc(100vh - 180px); overflow-y: auto; }
 
-.alerts-full-list {
-    padding: 15px 20px;
-    max-height: calc(100vh - 180px);
-    overflow-y: auto;
-}
-
-/* ===== LAYER 4: STATIONS GRID (from old code) ===== */
-.stations-full-card {
-    flex: 1;
-}
-
-.stations-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    padding: 20px;
-}
-
-.station-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    padding: 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    position: relative;
-    min-height: 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.station-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-/* Highlight khi được chọn */
-.station-card.station-selected {
-    border-color: #00d4ff;
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
-}
-
-/* 4 trạng thái màu sắc (giữ nguyên từ kiến trúc cũ) */
-.station-card.status-safe {
-    background: linear-gradient(135deg, #0f3d1b, #1e5a2d);
-    border-color: #28a745;
-}
-
-.station-card.status-advisory {
-    background: linear-gradient(135deg, #0d3b4f, #1a5a7a);
-    border-color: #00d4ff;
-}
-
-.station-card.status-warning {
-    background: linear-gradient(135deg, #5a3d0d, #8a5d1a);
-    border-color: #ff9800;
-    animation: pulse-warning 1.5s ease-in-out infinite;
-}
-
-.station-card.status-critical {
-    background: linear-gradient(135deg, #5a0d0d, #8a1a1a);
-    border-color: #ff0040;
-    animation: pulse-critical 1s ease-in-out infinite;
-}
-
-@keyframes pulse-warning {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 183, 0, 0.2); }
-    50% { box-shadow: 0 0 40px rgba(255, 183, 0, 0.4); }
-}
-
-@keyframes pulse-critical {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 64, 0.3); }
-    50% { box-shadow: 0 0 60px rgba(255, 0, 64, 0.6); }
-}
-
-.station-name {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.station-depth {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 3px 0;
-}
-
-.station-rate {
-    font-size: 12px;
-    color: #8892b0;
-    margin: 2px 0;
-}
-
-.station-risk {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 3px 0;
-}
-
-.station-status-text {
-    font-size: 11px;
-    margin-top: 3px;
-    padding: 2px 10px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-/* ===== ALERT ITEMS (giữ nguyên + thêm icon layout) ===== */
+/* ===== ALERT ITEMS ===== */
 .alert-item {
     padding: 10px 15px;
     margin-bottom: 8px;
@@ -256,88 +108,83 @@
     transition: all 0.3s ease;
 }
 
-.alert-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateX(5px);
-}
+.alert-item:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
+.alert-item.status-safe { border-left-color: #28a745; background: rgba(40, 167, 69, 0.08); }
+.alert-item.status-advisory { border-left-color: #00d4ff; background: rgba(0, 212, 255, 0.08); }
+.alert-item.status-warning { border-left-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
+.alert-item.status-critical { border-left-color: #ff0040; background: rgba(255, 0, 64, 0.15); }
 
-.alert-item.status-safe {
-    border-left-color: #28a745;
-    background: rgba(40, 167, 69, 0.08);
-}
-
-.alert-item.status-advisory {
-    border-left-color: #00d4ff;
-    background: rgba(0, 212, 255, 0.08);
-}
-
-.alert-item.status-warning {
-    border-left-color: #ff9800;
-    background: rgba(255, 152, 0, 0.1);
-}
-
-.alert-item.status-critical {
-    border-left-color: #ff0040;
-    background: rgba(255, 0, 64, 0.15);
-}
-
-.alert-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-    line-height: 1;
-}
-
-.alert-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.alert-content strong {
-    display: block;
-    margin-bottom: 2px;
-}
-
-.alert-content em {
-    color: #8892b0;
-}
+.alert-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
+.alert-content { flex: 1; min-width: 0; }
+.alert-content strong { display: block; margin-bottom: 2px; }
+.alert-content em { color: #8892b0; }
 
 @keyframes slideIn {
     from { opacity: 0; transform: translateX(-20px); }
     to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ===== LEAFLET MAP — CHỐNG XUNG ĐỘT CSS ===== */
-/*
-   QUAN TRỌNG: Nếu bất kỳ selector nào ở parent đặt filter (brightness, contrast, invert...)
-   thì Leaflet tiles sẽ bị sọc/đen/trắng. Các rule dưới đây bảo vệ Leaflet tiles
-   khỏi mọi CSS filter từ parent.
-*/
+/* =====================================================================
+   LEAFLET MAP — FIX SỌC TRẮNG + DARK THEME
+   
+   Nguyên nhân sọc trắng: Global `* { box-sizing: border-box }` ở style.css
+   làm tiles co lại 1-2px → khoảng trắng giữa tiles.
+   
+   Fix: Override về content-box cho toàn bộ Leaflet + dark filter trên tiles.
+   ===================================================================== */
+
+/* Cách ly Leaflet khỏi global CSS */
 .leaflet-container {
-    isolation: isolate;     /* Tạo stacking context riêng, cách ly filter */
+    isolation: isolate;
     font-family: inherit;
 }
 
+/* FIX CHÍNH: Override box-sizing về content-box */
 .leaflet-container,
 .leaflet-container * {
-    filter: none !important;
-    -webkit-filter: none !important;
+    box-sizing: content-box !important;
+    -webkit-box-sizing: content-box !important;
+    -moz-box-sizing: content-box !important;
+}
+
+/* Chống max-width/transition gây tile co/chậm */
+.leaflet-container img {
+    max-width: none !important;
+    max-height: none !important;
+    image-rendering: auto;
+    transition: none !important;
 }
 
 .leaflet-tile-pane {
     isolation: isolate;
+    transition: none !important;
 }
 
-img.leaflet-tile {
-    image-rendering: auto;
-    filter: none !important;
-    -webkit-filter: none !important;
+/* DARK THEME: filter invert chỉ trên tile images
+   - invert(100%): nền trắng → đen
+   - hue-rotate(180°): phục hồi tông màu gốc
+   - Markers/Popups/Controls KHÔNG bị ảnh hưởng (nằm ở pane khác) */
+.leaflet-tile-pane img.leaflet-tile {
+    width: 256px !important;
+    height: 256px !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    outline: none !important;
+    transition: none !important;
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+    -webkit-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
 }
 
-/* ===== MAP MARKERS (tròn nhỏ, nhấp nháy nhẹ) ===== */
-/*
-   Yêu cầu: KHÔNG neon, chỉ chớp nháy vừa đủ nổi bật so với map.
-   Dùng opacity 0.65↔1.0 + box-shadow nhẹ.
-*/
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-map-pane,
+.leaflet-tile-container {
+    transition: none !important;
+}
+
+/* ===== MAP MARKERS ===== */
 .map-marker-wrapper {
     background: transparent !important;
     border: none !important;
@@ -352,47 +199,29 @@ img.leaflet-tile {
     cursor: pointer;
 }
 
-.map-marker.marker-safe {
-    background-color: #28a745;
-    animation: marker-pulse-safe 2.5s ease-in-out infinite;
-}
-
-.map-marker.marker-advisory {
-    background-color: #17a2b8;
-    animation: marker-pulse-advisory 2.5s ease-in-out infinite;
-}
-
-.map-marker.marker-warning {
-    background-color: #ff9800;
-    animation: marker-pulse-warning 2s ease-in-out infinite;
-}
-
-.map-marker.marker-critical {
-    background-color: #e53935;
-    animation: marker-pulse-critical 1.5s ease-in-out infinite;
-}
+.map-marker.marker-safe { background-color: #28a745; animation: marker-pulse-safe 2.5s ease-in-out infinite; }
+.map-marker.marker-advisory { background-color: #17a2b8; animation: marker-pulse-advisory 2.5s ease-in-out infinite; }
+.map-marker.marker-warning { background-color: #ff9800; animation: marker-pulse-warning 2s ease-in-out infinite; }
+.map-marker.marker-critical { background-color: #e53935; animation: marker-pulse-critical 1.5s ease-in-out infinite; }
 
 @keyframes marker-pulse-safe {
     0%, 100% { opacity: 0.65; box-shadow: 0 0 4px rgba(40, 167, 69, 0.3); }
     50%      { opacity: 1;    box-shadow: 0 0 8px rgba(40, 167, 69, 0.45); }
 }
-
 @keyframes marker-pulse-advisory {
     0%, 100% { opacity: 0.65; box-shadow: 0 0 4px rgba(23, 162, 184, 0.3); }
     50%      { opacity: 1;    box-shadow: 0 0 8px rgba(23, 162, 184, 0.45); }
 }
-
 @keyframes marker-pulse-warning {
     0%, 100% { opacity: 0.65; box-shadow: 0 0 5px rgba(255, 152, 0, 0.35); }
     50%      { opacity: 1;    box-shadow: 0 0 12px rgba(255, 152, 0, 0.5); }
 }
-
 @keyframes marker-pulse-critical {
     0%, 100% { opacity: 0.6;  box-shadow: 0 0 5px rgba(229, 57, 53, 0.4); }
     50%      { opacity: 1;    box-shadow: 0 0 14px rgba(229, 57, 53, 0.55); }
 }
 
-/* ===== LEAFLET POPUP (tối màu phong cách dark theme) ===== */
+/* ===== LEAFLET POPUP (dark theme) ===== */
 .leaflet-popup-content-wrapper {
     background: linear-gradient(135deg, #1a1f4e, #0d1133) !important;
     color: #ffffff !important;
@@ -400,47 +229,309 @@ img.leaflet-tile {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
+.leaflet-popup-content { margin: 12px 16px !important; font-size: 13px !important; line-height: 1.6 !important; }
+.leaflet-popup-tip { background: #1a1f4e !important; }
 
-.leaflet-popup-content {
-    margin: 12px 16px !important;
-    font-size: 13px !important;
-    line-height: 1.6 !important;
-}
-
-.leaflet-popup-tip {
-    background: #1a1f4e !important;
-}
-
-.popup-station-name {
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 4px;
-}
-
-.popup-district {
-    color: #8892b0;
-    font-size: 12px;
-    margin-bottom: 8px;
-}
-
-.popup-status {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-
+.popup-station-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.popup-district { color: #8892b0; font-size: 12px; margin-bottom: 8px; }
+.popup-status { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 6px; }
 .popup-status.status-safe     { background: rgba(40, 167, 69, 0.2);  color: #28a745; }
 .popup-status.status-advisory { background: rgba(23, 162, 184, 0.2); color: #17a2b8; }
 .popup-status.status-warning  { background: rgba(255, 152, 0, 0.2);  color: #ff9800; }
 .popup-status.status-critical { background: rgba(229, 57, 53, 0.2);  color: #e53935; }
 
-/* ===== LAYER 6: REPORTS GRID (5 biểu đồ) ===== */
-.reports-card {
-    flex: 1;
+/* =====================================================================
+   STATION DETAIL LAYER (Kresna-inspired, adapted to dark theme)
+   ===================================================================== */
+
+.station-detail-wrapper {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 16px;
+    align-items: stretch;
 }
+
+/* --- Left Card: Water Animation --- */
+.station-detail-left { position: relative; }
+
+.water-box {
+    position: relative;
+    min-height: 400px;
+    height: 100%;
+    border-radius: 28px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #070d1f 0%, #0a1a3a 30%, #0d2650 60%, #1a3a70 100%);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 12px 40px rgba(21, 76, 189, 0.25);
+}
+
+.water-glow {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: radial-gradient(ellipse at 50% 100%, rgba(30, 100, 220, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Rotating wave blobs */
+.water-wave {
+    position: absolute;
+    border-radius: 43%;
+    pointer-events: none;
+}
+
+.water-wave-1 {
+    bottom: -60%;
+    left: -20%;
+    width: 140%;
+    height: 140%;
+    background: rgba(30, 100, 200, 0.08);
+    animation: water-spin 12s linear infinite;
+}
+
+.water-wave-2 {
+    bottom: -55%;
+    left: -30%;
+    width: 160%;
+    height: 160%;
+    border-radius: 45%;
+    background: rgba(20, 80, 180, 0.06);
+    animation: water-spin 8s linear infinite reverse;
+}
+
+.water-wave-3 {
+    bottom: -50%;
+    left: -25%;
+    width: 150%;
+    height: 150%;
+    border-radius: 47%;
+    background: rgba(50, 150, 255, 0.04);
+    animation: water-spin 6s linear infinite;
+}
+
+@keyframes water-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Floating bubbles */
+.water-bubbles {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bubble {
+    position: absolute;
+    bottom: -20px;
+    border-radius: 50%;
+    background: rgba(100, 180, 255, 0.25);
+}
+
+.bubble:nth-child(1) { left: 15%; width: 6px; height: 6px; animation: bubble-rise 7s linear infinite 0s; }
+.bubble:nth-child(2) { left: 35%; width: 4px; height: 4px; animation: bubble-rise 9s linear infinite 1.5s; }
+.bubble:nth-child(3) { left: 55%; width: 7px; height: 7px; animation: bubble-rise 6s linear infinite 0.8s; }
+.bubble:nth-child(4) { left: 75%; width: 5px; height: 5px; animation: bubble-rise 10s linear infinite 2s; }
+.bubble:nth-child(5) { left: 45%; width: 3px; height: 3px; animation: bubble-rise 11s linear infinite 3.5s; }
+
+@keyframes bubble-rise {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.2; }
+    100% { transform: translateY(-420px) scale(0.4); opacity: 0; }
+}
+
+/* Water surface shimmer line */
+.water-surface {
+    position: absolute;
+    bottom: 38%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(100, 180, 255, 0.25), transparent);
+    animation: surface-shimmer 3s ease-in-out infinite;
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes surface-shimmer {
+    0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+    50%      { opacity: 0.7; transform: scaleX(1.1); }
+}
+
+/* Station branding on water card */
+.water-station-logo {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.water-logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.water-station-name {
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+.water-tagline {
+    position: relative;
+    z-index: 2;
+    margin-top: auto;
+    margin-bottom: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    color: white;
+    line-height: 1.5;
+}
+
+.water-tagline-sub {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 15px;
+}
+
+.water-status-row {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.water-status-label {
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.3px;
+}
+
+.water-status-badge {
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.water-status-badge.badge-safe     { background: rgba(40, 167, 69, 0.25);  color: #4cdf78; }
+.water-status-badge.badge-advisory { background: rgba(23, 162, 184, 0.25); color: #5cd6eb; }
+.water-status-badge.badge-warning  { background: rgba(255, 152, 0, 0.25);  color: #ffb74d; }
+.water-status-badge.badge-critical { background: rgba(229, 57, 53, 0.3);   color: #ff6659; }
+
+/* --- Right Card: Metrics --- */
+.station-detail-right {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.detail-metrics-header {
+    margin-bottom: 24px;
+}
+
+.detail-metrics-header h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+}
+
+.detail-coords {
+    font-size: 12px;
+    color: #8892b0;
+}
+
+.detail-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    align-content: start;
+}
+
+.detail-metric-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.detail-metric-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.metric-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #8892b0;
+    font-weight: 500;
+}
+
+.metric-value {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.metric-unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: #8892b0;
+    margin-left: 4px;
+}
+
+/* Status row (spans full width) */
+.detail-metric-card.metric-status {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+}
+
+.status-text-safe     { color: #28a745 !important; font-size: 18px !important; }
+.status-text-advisory { color: #17a2b8 !important; font-size: 18px !important; }
+.status-text-warning  { color: #ff9800 !important; font-size: 18px !important; }
+.status-text-critical { color: #e53935 !important; font-size: 18px !important; }
+
+/* ===== REPORTS GRID (5 biểu đồ) ===== */
+.reports-card { flex: 1; }
 
 .reports-grid {
     display: grid;
@@ -456,22 +547,9 @@ img.leaflet-tile {
     padding: 15px;
 }
 
-.report-chart-box h4 {
-    font-size: 13px;
-    color: #8892b0;
-    margin-bottom: 10px;
-    font-weight: 500;
-}
-
-.report-chart-wrapper {
-    position: relative;
-    height: 220px;
-}
-
-/* Biểu đồ thứ 5 chiếm full width */
-.report-chart-box:nth-child(5) {
-    grid-column: 1 / -1;
-}
+.report-chart-box h4 { font-size: 13px; color: #8892b0; margin-bottom: 10px; font-weight: 500; }
+.report-chart-wrapper { position: relative; height: 220px; }
+.report-chart-box:nth-child(5) { grid-column: 1 / -1; }
 
 /* ===== LOADING SHIMMER ===== */
 @keyframes shimmer {
@@ -479,45 +557,18 @@ img.leaflet-tile {
     100% { background-position: 200% 0; }
 }
 
-.station-card.loading {
-    background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0.05) 25%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.05) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
-    .main-top-row {
-        grid-template-columns: 1fr;
-    }
+    .main-top-row { grid-template-columns: 1fr; }
+    .station-detail-wrapper { grid-template-columns: 1fr; }
+    .water-box { min-height: 300px; }
 }
 
 @media (max-width: 768px) {
-    .stations-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        padding: 10px;
-    }
-    .station-card {
-        min-height: 100px;
-        padding: 12px;
-    }
-    .station-risk  { font-size: 18px; }
-    .station-depth { font-size: 16px; }
-    .reports-grid {
-        grid-template-columns: 1fr;
-    }
-    .report-chart-box:nth-child(5) {
-        grid-column: auto;
-    }
-    .fullmap-container {
-        min-height: calc(100vh - 200px);
-    }
-    .map-container {
-        height: 280px;
-    }
+    .reports-grid { grid-template-columns: 1fr; }
+    .report-chart-box:nth-child(5) { grid-column: auto; }
+    .fullmap-container { min-height: calc(100vh - 200px); }
+    .map-container { height: 280px; }
+    .detail-metrics-grid { grid-template-columns: 1fr; }
+    .detail-metric-card.metric-status { grid-column: auto; }
 }
