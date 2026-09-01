@@ -83,7 +83,7 @@ function createMarkersForMap(map, markersObj, prefix) {
         marker.bindPopup(`
             <div class="popup-station-name">${getStationDisplayName(loc.id)}</div>
             <div class="popup-district">📍 ${loc.street}, ${loc.district}</div>
-            <div class="popup-status status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
+            <div class="popup-status status-pill status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
             <div style="margin-top:6px;">
                 <span>Mực nước: <b id="popup-depth-${prefix}-${loc.id}">--</b> m</span><br>
                 <span>Risk Score: <b id="popup-risk-${prefix}-${loc.id}">--</b></span>
@@ -121,7 +121,7 @@ function updateMapMarkers(stationsData) {
             // Cập nhật nội dung popup (nếu popup đang mở thì thấy ngay)
             const popupStatus = document.getElementById(`popup-status-${prefix}-${id}`);
             if (popupStatus) {
-                popupStatus.className = `popup-status status-${status.toLowerCase()}`;
+                popupStatus.className = `popup-status status-pill status-${status.toLowerCase()}`;
                 popupStatus.textContent = statusLabels[status] || status;
             }
             const popupDepth = document.getElementById(`popup-depth-${prefix}-${id}`);

@@ -12,18 +12,20 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="../src/css/style.css">
     <link rel="stylesheet" href="../src/css/dashboard.css">
+    <link rel="stylesheet" href="../src/css/motion.css">
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div class="cinematic-noise"></div>
     <div class="app-wrapper">
 
         <!-- ===== SIDEBAR NAVIGATION ===== -->
-        <nav class="sidebar" id="sidebar">
+        <nav class="sidebar motion-fade-down motion-p1" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo">🌊</div>
+                <div class="sidebar-logo hover-motion-icon">🌊</div>
                 <div class="sidebar-title">FloodGuard</div>
                 <div class="sidebar-subtitle">Hệ thống cảnh báo ngập AIoT</div>
             </div>
@@ -50,8 +52,8 @@
                 </li>
             </ul>
             <!-- Nút quay lại -->
-            <div class="sidebar-back" id="backBtn" style="display: none;">
-                <span class="sidebar-icon">◀</span>
+            <div class="sidebar-back hover-motion-btn" id="backBtn" style="display: none;">
+                <span class="sidebar-icon hover-motion-icon">◀</span>
                 <span class="sidebar-text">Quay lại</span>
             </div>
         </nav>
@@ -59,7 +61,7 @@
         <!-- ===== MAIN CONTENT AREA ===== -->
         <div class="content-area">
             <!-- Header -->
-            <header class="dashboard-header">
+            <header class="dashboard-header motion-fade-down motion-p1">
                 <h1>🌊 Tổng quan tình hình ngập lụt TP. Hồ Chí Minh</h1>
                 <div class="header-time" id="currentTime"></div>
             </header>
@@ -68,19 +70,19 @@
             <div class="layer-container layer-active" id="layer-main">
                 <div class="main-top-row">
                     <!-- Thẻ Bản đồ -->
-                    <div class="card map-card">
-                        <div class="card-header">
+                    <div class="card map-card motion-fade-up motion-p4 liquid-glass hover-motion-card">
+                        <div class="card-header macos-frame">
                             <h3>🗺️ Bản đồ quan trắc</h3>
                         </div>
                         <div class="map-container" id="main-map-container">
-                            <div id="main-map"></div>
+                            <div id="main-map" class="map-motion-entrance"></div>
                         </div>
-                        <button class="btn-fullscreen" id="btnFullscreenMap">
+                        <button class="btn-fullscreen hover-motion-btn" id="btnFullscreenMap">
                             🔍 Xem toàn màn hình
                         </button>
                     </div>
                     <!-- Thẻ Dự báo (để trống) -->
-                    <div class="card forecast-card">
+                    <div class="card forecast-card motion-fade-up motion-p3 liquid-glass hover-motion-card">
                         <div class="card-header">
                             <h3>📊 Dự báo ngập theo quận/huyện</h3>
                         </div>
@@ -94,13 +96,13 @@
                     </div>
                 </div>
                 <!-- Thẻ Cảnh báo gần nhất -->
-                <div class="card notification-card">
+                <div class="card notification-card motion-fade-up motion-p5 liquid-glass hover-motion-card">
                     <div class="card-header">
                         <h3>⚠️ Cảnh báo gần nhất</h3>
-                        <a class="view-all-link" id="btnViewAllAlerts" href="#">Xem tất cả cảnh báo ›</a>
+                        <a class="view-all-link hover-motion-btn" id="btnViewAllAlerts" href="#">Xem tất cả cảnh báo ›</a>
                     </div>
-                    <div class="notification-feed" id="main-notification-feed">
-                        <div class="alert-item status-safe">
+                    <div class="notification-feed motion-stagger-children" id="main-notification-feed">
+                        <div class="alert-item status-safe hover-motion-card">
                             <span class="alert-icon" style="color: #28a745;">✅</span>
                             <div class="alert-content">
                                 <span>🟢 Hệ thống đang hoạt động bình thường</span>
@@ -112,32 +114,32 @@
 
             <!-- ===== LAYER 2: FULLSCREEN MAP ===== -->
             <div class="layer-container" id="layer-fullmap">
-                <div class="card fullmap-card">
-                    <div class="card-header">
+                <div class="card fullmap-card motion-fade-up motion-p2 liquid-glass">
+                    <div class="card-header macos-frame">
                         <h3>🗺️ Bản đồ ngập lụt TP. Hồ Chí Minh</h3>
                     </div>
                     <div class="fullmap-container" id="fullscreen-map-container">
-                        <div id="fullscreen-map"></div>
+                        <div id="fullscreen-map" class="map-motion-entrance"></div>
                     </div>
                 </div>
             </div>
 
             <!-- ===== LAYER 3: TẤT CẢ CẢNH BÁO ===== -->
             <div class="layer-container" id="layer-alerts">
-                <div class="card alerts-full-card">
+                <div class="card alerts-full-card motion-fade-up motion-p2 liquid-glass">
                     <div class="card-header">
                         <h3>⚠️ Tất cả cảnh báo ngập</h3>
                     </div>
-                    <div class="alerts-full-list" id="alerts-full-list"></div>
+                    <div class="alerts-full-list motion-stagger-children" id="alerts-full-list"></div>
                 </div>
             </div>
 
             <!-- ===== LAYER: CHI TIẾT TRẠM (Kresna-inspired) ===== -->
             <div class="layer-container" id="layer-station-detail">
-                <div class="station-detail-wrapper">
+                <div class="station-detail-wrapper motion-stagger-children">
                     <!-- Left: Water Animation Card -->
-                    <div class="station-detail-left">
-                        <div class="water-box">
+                    <div class="station-detail-left motion-fade-up">
+                        <div class="water-box liquid-glass hover-motion-card">
                             <div class="water-glow"></div>
                             <div class="water-wave water-wave-1"></div>
                             <div class="water-wave water-wave-2"></div>
@@ -151,7 +153,7 @@
                             </div>
                             <div class="water-surface"></div>
                             <div class="water-station-logo">
-                                <div class="water-logo-mark">📡</div>
+                                <div class="water-logo-mark hover-motion-icon">📡</div>
                                 <span class="water-station-name" id="detail-station-name">--</span>
                             </div>
                             <div class="water-tagline">
@@ -160,17 +162,17 @@
                             </div>
                             <div class="water-status-row">
                                 <span class="water-status-label">Trạng thái hiện tại</span>
-                                <span class="water-status-badge" id="detail-status-badge">An toàn</span>
+                                <span class="water-status-badge status-pill" id="detail-status-badge">An toàn</span>
                             </div>
                         </div>
                     </div>
                     <!-- Right: Metrics Card -->
-                    <div class="station-detail-right">
+                    <div class="station-detail-right motion-fade-up liquid-glass">
                         <div class="detail-metrics-header">
                             <h3 id="detail-title">📡 Thông tin chi tiết trạm</h3>
                             <span class="detail-coords" id="detail-coords">--</span>
                         </div>
-                        <div class="detail-metrics-grid" id="detail-metrics-grid">
+                        <div class="detail-metrics-grid motion-stagger-children" id="detail-metrics-grid">
                             <!-- 7 metric cards generated by layout.js -->
                         </div>
                     </div>
@@ -179,11 +181,11 @@
 
             <!-- ===== LAYER: BÁO CÁO & THỐNG KÊ (5 biểu đồ) ===== -->
             <div class="layer-container" id="layer-reports">
-                <div class="card reports-card">
-                    <div class="card-header">
+                <div class="card reports-card motion-fade-up motion-p2 liquid-glass">
+                    <div class="card-header macos-frame">
                         <h3>📊 Báo cáo & Thống kê — <span id="reports-station-name">--</span></h3>
                     </div>
-                    <div class="reports-grid" id="reports-grid"></div>
+                    <div class="reports-grid motion-stagger-children" id="reports-grid"></div>
                 </div>
             </div>
 

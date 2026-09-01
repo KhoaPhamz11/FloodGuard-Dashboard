@@ -145,8 +145,8 @@ function generateStationPickerButtons() {
 
     STATION_LOCATIONS.forEach(loc => {
         const btn = document.createElement("button");
-        btn.className = "station-picker-btn";
-        btn.innerHTML = `<span class="picker-icon">📡</span>Trạm ${loc.district}`;
+        btn.className = "station-picker-btn hover-motion-btn";
+        btn.innerHTML = `<span class="picker-icon hover-motion-icon">📡</span>Trạm ${loc.district}`;
 
         btn.addEventListener("click", () => {
             closeStationPicker();
@@ -216,11 +216,17 @@ function renderStationDetail(stationId) {
 
     metrics.forEach(m => {
         const card = document.createElement("div");
-        card.className = "detail-metric-card";
+        card.className = "detail-metric-card liquid-glass hover-motion-card";
+        
+        let valueClass = "metric-value";
+        if (m.id === "detail-risk") {
+            valueClass += " shiny-gradient";
+        }
+
         card.innerHTML = `
-            <span class="metric-label">${m.icon} ${m.label}</span>
+            <span class="metric-label hover-motion-icon">${m.icon} ${m.label}</span>
             <div>
-                <span class="metric-value" id="${m.id}">--</span>
+                <span class="${valueClass}" id="${m.id}">--</span>
                 <span class="metric-unit">${m.unit}</span>
             </div>
         `;
@@ -229,9 +235,9 @@ function renderStationDetail(stationId) {
 
     // Status card (full width)
     const statusCard = document.createElement("div");
-    statusCard.className = "detail-metric-card metric-status";
+    statusCard.className = "detail-metric-card metric-status liquid-glass hover-motion-card";
     statusCard.innerHTML = `
-        <span class="metric-label">📊 Trạng thái hoạt động</span>
+        <span class="metric-label hover-motion-icon">📊 Trạng thái hoạt động</span>
         <span class="metric-value metric-status-text" id="detail-status-text">Đang chờ dữ liệu...</span>
     `;
     grid.appendChild(statusCard);
@@ -277,7 +283,7 @@ function updateStationDetail(latestData) {
     const badge = document.getElementById("detail-status-badge");
     if (badge) {
         badge.textContent = statusLabels[status] || status;
-        badge.className = `water-status-badge badge-${status.toLowerCase()}`;
+        badge.className = `water-status-badge status-pill badge-${status.toLowerCase()}`;
     }
 
     // Text trên metrics card

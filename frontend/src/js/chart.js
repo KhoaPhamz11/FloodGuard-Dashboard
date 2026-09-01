@@ -220,7 +220,7 @@ async function renderAllChartsForStation(stationId) {
     chartConfigs.forEach((config, index) => {
         // Tạo container
         const box = document.createElement("div");
-        box.className = "report-chart-box";
+        box.className = "report-chart-box liquid-glass hover-motion-card";
 
         const canvasId = `report-chart-${index}`;
         box.innerHTML = `

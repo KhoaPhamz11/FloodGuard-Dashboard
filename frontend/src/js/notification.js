@@ -40,7 +40,7 @@ function createNotificationItem(feedElement, timeString, station) {
         : "ADVISORY";
 
     // Thêm class trạng thái
-    alertItem.classList.add("alert-item");
+    alertItem.classList.add("alert-item", "hover-motion-card");
     if (status === "ADVISORY")      alertItem.classList.add("status-advisory");
     else if (status === "WARNING")  alertItem.classList.add("status-warning");
     else if (status === "CRITICAL") alertItem.classList.add("status-critical");
