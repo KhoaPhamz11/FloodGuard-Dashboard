@@ -1,89 +1,98 @@
-// File: map.js — Module bản đồ Leaflet (MỚI trong V2)
-// Hiển thị 9 trạm quan trắc trên bản đồ TP.HCM dùng OpenStreetMap tiles.
-// Marker nhấp nháy nhẹ theo trạng thái (không neon, chỉ subtle pulse).
+// File: map.js — Module bản đồ MapLibre GL JS (MỚI trong V2)
+// Thay thế Leaflet bằng MapLibre WebGL để sửa lỗi "vệt trắng" và cải thiện độ mượt
+// Sử dụng bản đồ nền Esri Dark Gray (Không cần API Key)
 
-let mainMap = null;          // Bản đồ nhỏ ở Layer 1
-let fullscreenMap = null;    // Bản đồ lớn ở Layer 2
-let mainMarkers = {};        // { stationId: L.marker }
+let mainMap = null;          
+let fullscreenMap = null;    
+let mainMarkers = {};        
 let fullscreenMarkers = {};
 let mapsInitialized = false;
 
-// Trung tâm bản đồ: điểm giữa giữa Củ Chi (phía bắc) và Quận 7 (phía nam)
-const MAP_CENTER = [10.82, 106.65];
-const MAP_ZOOM_MAIN = 11;
-const MAP_ZOOM_FULL = 11;
+// Trung tâm bản đồ: [Kinh độ (lng), Vĩ độ (lat)] (Ngược với Leaflet)
+const MAP_CENTER = [106.65, 10.82]; 
+const MAP_ZOOM_MAIN = 10;
+const MAP_ZOOM_FULL = 10;
 
-// Tile layer URL (OpenStreetMap chuẩn, không cần API key)
-const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const TILE_OPTIONS = {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    keepBuffer: 4,               // Giữ bản đồ cũ làm nền đệm, chống chớp trắng
-    updateWhenZooming: false,    // Không nã request trong lúc đang zoom
-    updateWhenIdle: true         // Đợi thả chuột mới tải bản đồ
+// Esri Dark Gray Raster Style (Không cần API Key)
+const MAP_STYLE = {
+    "version": 8,
+    "sources": {
+        "esri-dark": {
+            "type": "raster",
+            "tiles": [
+                "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            ],
+            "tileSize": 256
+        }
+    },
+    "layers": [
+        {
+            "id": "esri-dark-layer",
+            "type": "raster",
+            "source": "esri-dark",
+            "minzoom": 0,
+            "maxzoom": 16
+        }
+    ]
 };
 
 // ===== KHỞI TẠO BẢN ĐỒ NHỎ (Layer 1) =====
 function initMaps() {
     const mainContainer = document.getElementById("main-map");
-    if (!mainContainer || mainMap) return;  // Đã init rồi thì bỏ qua
+    if (!mainContainer || mainMap) return;
 
-    mainMap = L.map("main-map", {
+    mainMap = new maplibregl.Map({
+        container: 'main-map',
+        style: MAP_STYLE,
         center: MAP_CENTER,
         zoom: MAP_ZOOM_MAIN,
-        zoomControl: true,
         attributionControl: false
     });
 
-    L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(mainMap);
+    mainMap.addControl(new maplibregl.NavigationControl(), 'top-right');
     createMarkersForMap(mainMap, mainMarkers, "main");
+
+    // Xử lý layout
+    setTimeout(() => {
+        if (mainMap) mainMap.resize();
+    }, 500);
 
     mapsInitialized = true;
 }
 
 // ===== KHỞI TẠO BẢN ĐỒ LỚN (Layer 2) =====
-// Gọi khi user chuyển sang layer fullmap (lazy init vì container ban đầu ẩn)
 function initFullscreenMap() {
     const fullContainer = document.getElementById("fullscreen-map");
     if (!fullContainer) return;
 
     if (!fullscreenMap) {
-        fullscreenMap = L.map("fullscreen-map", {
+        fullscreenMap = new maplibregl.Map({
+            container: 'fullscreen-map',
+            style: MAP_STYLE,
             center: MAP_CENTER,
             zoom: MAP_ZOOM_FULL,
-            zoomControl: true,
             attributionControl: false
         });
 
-        L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(fullscreenMap);
+        fullscreenMap.addControl(new maplibregl.NavigationControl(), 'top-right');
         createMarkersForMap(fullscreenMap, fullscreenMarkers, "full");
     }
 
-    // QUAN TRỌNG: Khi container chuyển từ display:none sang display:flex,
-    // Leaflet cần recalculate kích thước, nếu không tiles sẽ bị xếp sai.
     setTimeout(() => {
-        if (fullscreenMap) fullscreenMap.invalidateSize();
+        if (fullscreenMap) fullscreenMap.resize();
     }, 250);
 }
 
-// ===== TẠO MARKERS CHO 1 BẢN ĐỒ =====
+// ===== TẠO MARKERS =====
 function createMarkersForMap(map, markersObj, prefix) {
     if (typeof STATION_LOCATIONS === "undefined") return;
 
     STATION_LOCATIONS.forEach(loc => {
-        // Dùng L.divIcon thay vì icon ảnh → full CSS control, nhẹ hơn
-        const markerIcon = L.divIcon({
-            className: "map-marker-wrapper",   // Container trong suốt
-            html: `<div class="map-marker marker-safe" id="marker-${prefix}-${loc.id}"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7],     // Tâm marker
-            popupAnchor: [0, -10]   // Popup hiện phía trên
-        });
+        const el = document.createElement('div');
+        el.className = 'map-marker-wrapper';
+        el.innerHTML = `<div class="map-marker marker-safe" id="marker-${prefix}-${loc.id}"></div>`;
 
-        const marker = L.marker([loc.lat, loc.lng], { icon: markerIcon }).addTo(map);
-
-        // Popup khi click marker
-        marker.bindPopup(`
+        const popupHTML = `
             <div class="popup-station-name">${getStationDisplayName(loc.id)}</div>
             <div class="popup-district">📍 ${loc.street}, ${loc.district}</div>
             <div class="popup-status status-pill status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
@@ -91,13 +100,20 @@ function createMarkersForMap(map, markersObj, prefix) {
                 <span>Mực nước: <b id="popup-depth-${prefix}-${loc.id}">--</b> m</span><br>
                 <span>Risk Score: <b id="popup-risk-${prefix}-${loc.id}">--</b></span>
             </div>
-        `);
+        `;
+
+        const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(popupHTML);
+
+        const marker = new maplibregl.Marker({ element: el })
+            .setLngLat([loc.lng, loc.lat])
+            .setPopup(popup)
+            .addTo(map);
 
         markersObj[loc.id] = marker;
     });
 }
 
-// ===== CẬP NHẬT MÀU MARKER THEO STATUS (gọi mỗi giây) =====
+// ===== CẬP NHẬT MÀU MARKER THEO STATUS =====
 function updateMapMarkers(stationsData) {
     if (!stationsData || !mapsInitialized) return;
 
@@ -113,20 +129,18 @@ function updateMapMarkers(stationsData) {
         const status = getStatusFromCode(station.code);
         const markerClass = `marker-${status.toLowerCase()}`;
 
-        // Cập nhật cả 2 bản đồ (main + fullscreen)
         ["main", "full"].forEach(prefix => {
-            // Đổi màu marker
             const markerEl = document.getElementById(`marker-${prefix}-${id}`);
             if (markerEl) {
                 markerEl.className = `map-marker ${markerClass}`;
             }
 
-            // Cập nhật nội dung popup (nếu popup đang mở thì thấy ngay)
             const popupStatus = document.getElementById(`popup-status-${prefix}-${id}`);
             if (popupStatus) {
                 popupStatus.className = `popup-status status-pill status-${status.toLowerCase()}`;
                 popupStatus.textContent = statusLabels[status] || status;
             }
+            
             const popupDepth = document.getElementById(`popup-depth-${prefix}-${id}`);
             if (popupDepth) popupDepth.textContent = Number(station.H).toFixed(2);
 
@@ -136,12 +150,11 @@ function updateMapMarkers(stationsData) {
     });
 }
 
-// ===== REFRESH MAP SIZE (gọi khi chuyển layer) =====
+// ===== REFRESH MAP SIZE =====
 function refreshMapSize(mapName) {
     if (mapName === "main" && mainMap) {
-        setTimeout(() => mainMap.invalidateSize(), 250);
+        setTimeout(() => mainMap.resize(), 250);
     } else if (mapName === "fullscreen" && fullscreenMap) {
-        setTimeout(() => fullscreenMap.invalidateSize(), 250);
+        setTimeout(() => fullscreenMap.resize(), 250);
     }
 }
-
