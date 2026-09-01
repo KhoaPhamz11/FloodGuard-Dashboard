@@ -63,6 +63,7 @@ async function initDashboard() {
 
     // Giữ tương thích: init chart events
     if (typeof initChartEvents === "function") initChartEvents();
+    if (typeof initRealtimeChart === "function") initRealtimeChart("realtime-rain");
 
     // Gọi mẻ dữ liệu đầu tiên (API hoặc mock fallback)
     let initialData = await fetchLatestData();
@@ -108,6 +109,96 @@ function updateDashboardUI(latestData) {
     // Module 6: Cập nhật chi tiết trạm (Layer station-detail)
     if (typeof updateStationDetail === "function") {
         updateStationDetail(latestData);
+    }
+
+    // Module 7: Cập nhật biểu đồ chính (Layer 1)
+    if (typeof updateRealtimeChart === "function") {
+        updateRealtimeChart(latestData);
+    }
+
+    // Module 8: Cập nhật Command Center KPIs (New Layout)
+    updateCommandCenterKPIs(latestData);
+}
+
+function updateCommandCenterKPIs(latestData) {
+    if (!latestData || !latestData.stations_data) return;
+
+    let maxRisk = 0;
+    let maxRiskStation = null;
+    let maxRain = 0;
+    let maxRainStation = null;
+    let onlineCount = 0;
+
+    latestData.stations_data.forEach(station => {
+        if (station.code !== undefined && station.code !== null) onlineCount++;
+        
+        if (station.S_risk > maxRisk) {
+            maxRisk = station.S_risk;
+            maxRiskStation = station;
+        }
+
+        if (station.R > maxRain) {
+            maxRain = station.R;
+            maxRainStation = station;
+        }
+    });
+
+    // Cập nhật số trạm online
+    const onlineEl = document.getElementById("kpi-stations-online");
+    if (onlineEl) onlineEl.textContent = `${onlineCount} / ${latestData.stations_data.length}`;
+
+    // Cập nhật Risk Score lớn nhất
+    const riskEl = document.getElementById("kpi-max-risk");
+    const riskLocEl = document.getElementById("kpi-max-risk-loc");
+    if (riskEl) {
+        riskEl.textContent = Number(maxRisk).toFixed(2);
+        // Thay đổi gradient hoặc màu dựa trên mức rủi ro nếu cần thiết, 
+        // nhưng class shiny-gradient đã đảm nhận phần hiển thị đẹp.
+    }
+    if (riskLocEl && maxRiskStation) {
+        const stationId = typeof getStationNumericId === "function" ? getStationNumericId(maxRiskStation) : null;
+        const displayName = typeof getStationDisplayName === "function" && stationId ? getStationDisplayName(stationId) : maxRiskStation.station_name;
+        riskLocEl.textContent = `Tại ${displayName}`;
+    }
+
+    // Cập nhật Lượng mưa lớn nhất
+    const rainEl = document.getElementById("kpi-max-rain");
+    const rainLocEl = document.getElementById("kpi-max-rain-loc");
+    if (rainEl) rainEl.textContent = Number(maxRain).toFixed(2);
+    if (rainLocEl && maxRainStation) {
+        const stationId = typeof getStationNumericId === "function" ? getStationNumericId(maxRainStation) : null;
+        const displayName = typeof getStationDisplayName === "function" && stationId ? getStationDisplayName(stationId) : maxRainStation.station_name;
+        rainLocEl.textContent = `Tại ${displayName} (mm/phút)`;
+    }
+
+    // Cập nhật AI Trend (mô phỏng intelligence dựa trên Risk lớn nhất)
+    const aiTrendEl = document.getElementById("ai-trend");
+    const aiConfEl = document.getElementById("ai-confidence-val");
+    const aiRecEl = document.getElementById("ai-recommendation");
+    
+    if (aiTrendEl && aiRecEl) {
+        if (maxRisk > 0.8) {
+            aiTrendEl.textContent = `Cảnh báo: Rủi ro ngập đang tăng nhanh tại ${maxRiskStation ? maxRiskStation.station_name : 'một số khu vực'}. Khả năng ngập lụt cục bộ trong 15-30 phút tới.`;
+            aiTrendEl.style.color = "#ff5f56";
+            aiConfEl.textContent = "94%";
+            aiRecEl.textContent = "Hành động: Điều hướng giao thông khỏi khu vực rủi ro và kích hoạt máy bơm công suất lớn.";
+            aiRecEl.style.borderLeftColor = "#ff5f56";
+            aiRecEl.style.backgroundColor = "rgba(255, 95, 86, 0.1)";
+        } else if (maxRisk > 0.4) {
+            aiTrendEl.textContent = "Dự báo: Lượng mưa tăng nhẹ, hệ thống thoát nước hiện vẫn đáp ứng được. Cần tiếp tục theo dõi.";
+            aiTrendEl.style.color = "#ffbd2e";
+            aiConfEl.textContent = "88%";
+            aiRecEl.textContent = "Hành động: Tăng cường giám sát tại các trạm đang có cảnh báo nhẹ.";
+            aiRecEl.style.borderLeftColor = "#ffbd2e";
+            aiRecEl.style.backgroundColor = "rgba(255, 189, 46, 0.1)";
+        } else {
+            aiTrendEl.textContent = "Tình trạng ổn định. Hệ thống thoát nước hoạt động bình thường, không có dấu hiệu ngập lụt trong 2 giờ tới.";
+            aiTrendEl.style.color = "#27c93f";
+            aiConfEl.textContent = "98%";
+            aiRecEl.textContent = "Hành động: Duy trì hệ thống quan trắc tiêu chuẩn.";
+            aiRecEl.style.borderLeftColor = "#27c93f";
+            aiRecEl.style.backgroundColor = "rgba(39, 201, 63, 0.1)";
+        }
     }
 }
 

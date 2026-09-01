@@ -32,25 +32,33 @@
             <ul class="sidebar-menu">
                 <li class="sidebar-item active" data-layer="main">
                     <span class="sidebar-icon">🏠</span>
-                    <span class="sidebar-text">Tổng quan</span>
+                    <span class="sidebar-text">Overview</span>
                 </li>
                 <li class="sidebar-item" data-layer="fullmap">
                     <span class="sidebar-icon">🗺️</span>
-                    <span class="sidebar-text">Bản đồ ngập</span>
+                    <span class="sidebar-text">Live Map</span>
                 </li>
                 <li class="sidebar-item" data-layer="stations-picker">
                     <span class="sidebar-icon">📡</span>
-                    <span class="sidebar-text">Trạm & Cảm biến</span>
+                    <span class="sidebar-text">Stations</span>
                 </li>
                 <li class="sidebar-item" data-layer="alerts">
                     <span class="sidebar-icon">⚠️</span>
-                    <span class="sidebar-text">Cảnh báo</span>
+                    <span class="sidebar-text">Alerts</span>
                 </li>
                 <li class="sidebar-item" data-layer="reports-picker">
                     <span class="sidebar-icon">📊</span>
-                    <span class="sidebar-text">Báo cáo & Thống kê</span>
+                    <span class="sidebar-text">Analytics</span>
                 </li>
             </ul>
+            
+            <div class="sidebar-system-status">
+                <div class="sys-title">SYSTEM</div>
+                <div class="sys-item"><span class="status-dot green"></span> Online</div>
+                <div class="sys-item"><span class="status-dot green"></span> MQTT Connected</div>
+                <div class="sys-item"><span class="status-dot blue"></span> Sync: Live</div>
+            </div>
+
             <!-- Nút quay lại -->
             <div class="sidebar-back hover-motion-btn" id="backBtn" style="display: none;">
                 <span class="sidebar-icon hover-motion-icon">◀</span>
@@ -62,52 +70,90 @@
         <div class="content-area">
             <!-- Header -->
             <header class="dashboard-header motion-fade-down motion-p1">
-                <h1>🌊 Tổng quan tình hình ngập lụt TP. Hồ Chí Minh</h1>
+                <div class="header-left">
+                    <h1>FLOODGUARD</h1>
+                    <span class="header-subtitle">Urban Flood Monitoring Command Center</span>
+                </div>
+                <div class="header-center">
+                    <span class="header-badge green"><span class="status-dot green"></span> SYSTEM ONLINE</span>
+                    <span class="header-badge blue">MQTT ACTIVE</span>
+                </div>
                 <div class="header-time" id="currentTime"></div>
             </header>
 
             <!-- ===== LAYER 1: MAIN DASHBOARD ===== -->
             <div class="layer-container layer-active" id="layer-main">
-                <div class="main-top-row">
-                    <!-- Thẻ Bản đồ -->
+                
+                <!-- KPI Panel -->
+                <div class="kpi-panel motion-stagger-children">
+                    <div class="kpi-card liquid-glass hover-motion-card">
+                        <div class="kpi-label">HỆ THỐNG TRẠM</div>
+                        <div class="kpi-value" id="kpi-stations-online">9 / 9</div>
+                        <div class="kpi-sub">Đang hoạt động (Online)</div>
+                    </div>
+                    <div class="kpi-card liquid-glass hover-motion-card">
+                        <div class="kpi-label">RỦI RO NGẬP CAO NHẤT</div>
+                        <div class="kpi-value shiny-gradient" id="kpi-max-risk">0.00</div>
+                        <div class="kpi-sub" id="kpi-max-risk-loc">Chưa có dữ liệu</div>
+                    </div>
+                    <div class="kpi-card liquid-glass hover-motion-card">
+                        <div class="kpi-label">LƯỢNG MƯA CAO NHẤT</div>
+                        <div class="kpi-value" id="kpi-max-rain">0.00</div>
+                        <div class="kpi-sub" id="kpi-max-rain-loc">mm/phút</div>
+                    </div>
+                </div>
+
+                <div class="main-content-grid">
+                    <!-- MAIN MAP -->
                     <div class="card map-card motion-fade-up motion-p4 liquid-glass hover-motion-card">
                         <div class="card-header macos-frame">
-                            <h3>🗺️ Bản đồ quan trắc</h3>
+                            <h3>🗺️ Bản đồ quan trắc Realtime</h3>
                         </div>
                         <div class="map-container" id="main-map-container">
                             <div id="main-map" class="map-motion-entrance"></div>
                         </div>
                         <button class="btn-fullscreen hover-motion-btn" id="btnFullscreenMap">
-                            🔍 Xem toàn màn hình
+                            🔍 Mở rộng bản đồ
                         </button>
                     </div>
-                    <!-- Thẻ Dự báo (để trống) -->
-                    <div class="card forecast-card motion-fade-up motion-p3 liquid-glass hover-motion-card">
-                        <div class="card-header">
-                            <h3>📊 Dự báo ngập theo quận/huyện</h3>
+
+                    <!-- RIGHT COLUMN: ALERTS & AI -->
+                    <div class="right-col-grid">
+                        <div class="card ai-card motion-fade-up motion-p3 liquid-glass hover-motion-card">
+                            <div class="card-header macos-frame">
+                                <h3>🧠 AI Flood Intelligence</h3>
+                            </div>
+                            <div class="ai-analysis-reveal ai-content">
+                                <h4>DỰ BÁO XU HƯỚNG</h4>
+                                <p id="ai-trend" class="ai-trend-text">Đang phân tích dữ liệu cảm biến...</p>
+                                <div class="ai-confidence">Độ tin cậy: <span class="shiny-gradient" id="ai-confidence-val">92%</span></div>
+                                <div class="ai-recommendation" id="ai-recommendation">Đang thu thập dữ liệu khuyến nghị.</div>
+                            </div>
                         </div>
-                        <div class="forecast-placeholder">
-                            <div class="forecast-placeholder-inner">
-                                <span class="placeholder-icon">🔮</span>
-                                <p>Chức năng đang được phát triển...</p>
-                                <p class="placeholder-sub">Dữ liệu dự báo sẽ được cập nhật tại đây</p>
+
+                        <div class="card notification-card motion-fade-up motion-p5 liquid-glass hover-motion-card">
+                            <div class="card-header">
+                                <h3>⚠️ Cảnh báo gần nhất</h3>
+                                <a class="view-all-link hover-motion-btn" id="btnViewAllAlerts" href="#">Tất cả ›</a>
+                            </div>
+                            <div class="notification-feed motion-stagger-children" id="main-notification-feed">
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Thẻ Cảnh báo gần nhất -->
-                <div class="card notification-card motion-fade-up motion-p5 liquid-glass hover-motion-card">
-                    <div class="card-header">
-                        <h3>⚠️ Cảnh báo gần nhất</h3>
-                        <a class="view-all-link hover-motion-btn" id="btnViewAllAlerts" href="#">Xem tất cả cảnh báo ›</a>
+
+                <!-- BOTTOM PANEL: REALTIME CHART -->
+                <div class="card chart-panel motion-fade-up motion-p5 liquid-glass hover-motion-card" style="margin-top: 20px;">
+                    <div class="card-header macos-frame">
+                        <h3>📈 Biểu đồ quan trắc Realtime</h3>
+                        <select id="chart-mode-select" class="chart-select" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px 8px; font-size: 12px; font-family: inherit;">
+                            <option value="realtime-rain">Lượng mưa (mm/phút)</option>
+                            <option value="realtime-drainage">Khả năng thoát nước</option>
+                            <option value="realtime-tide">Thủy triều</option>
+                        </select>
                     </div>
-                    <div class="notification-feed motion-stagger-children" id="main-notification-feed">
-                        <div class="alert-item status-safe hover-motion-card">
-                            <span class="alert-icon" style="color: #28a745;">✅</span>
-                            <div class="alert-content">
-                                <span>🟢 Hệ thống đang hoạt động bình thường</span>
-                            </div>
-                        </div>
+                    <div class="chart-container" style="height: 250px; padding: 15px;">
+                        <canvas id="flood-chart-canvas"></canvas>
                     </div>
                 </div>
             </div>

@@ -571,4 +571,190 @@
     .map-container { height: 280px; }
     .detail-metrics-grid { grid-template-columns: 1fr; }
     .detail-metric-card.metric-status { grid-column: auto; }
+}/* ===== COMMAND CENTER MAIN LAYOUT ===== */
+.kpi-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.kpi-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #8892b0;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.kpi-sub {
+    font-size: 12px;
+    color: #00d4ff;
+}
+
+.main-content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.right-col-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+}
+
+.ai-card {
+    border: 1px solid rgba(0, 212, 255, 0.3) !important;
+    background: linear-gradient(180deg, rgba(13, 17, 51, 0.6) 0%, rgba(26, 31, 78, 0.6) 100%) !important;
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1) !important;
+}
+
+.ai-content {
+    padding: 20px;
+}
+
+.ai-content h4 {
+    font-size: 12px;
+    color: #8892b0;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+}
+
+.ai-trend-text {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.ai-confidence {
+    font-size: 13px;
+    color: #8892b0;
+    margin-bottom: 15px;
+}
+
+.ai-recommendation {
+    padding: 12px;
+    background: rgba(0, 212, 255, 0.1);
+    border-left: 3px solid #00d4ff;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #ffffff;
+}
+
+@media (max-width: 1024px) {
+    .main-content-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .kpi-panel { grid-template-columns: 1fr; }
+}
+/* ===== SIDEBAR SYSTEM STATUS ===== */
+.sidebar-system-status {
+    padding: 20px;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sys-title {
+    font-size: 10px;
+    color: #8892b0;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.sys-item {
+    font-size: 12px;
+    color: #a9b2d3;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.status-dot.green { background: #28a745; box-shadow: 0 0 5px #28a745; }
+.status-dot.blue { background: #00d4ff; box-shadow: 0 0 5px #00d4ff; }
+/* ===== COMMAND CENTER HEADER ===== */
+.header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.header-left h1 {
+    font-size: 18px !important;
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+}
+
+.header-subtitle {
+    font-size: 11px;
+    color: #8892b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.header-center {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.header-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-badge.green { color: #28a745; border-color: rgba(40, 167, 69, 0.3); background: rgba(40, 167, 69, 0.05); }
+.header-badge.blue { color: #00d4ff; border-color: rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.05); }
+
+.header-time {
+    font-size: 16px !important;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #00d4ff !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+@media (max-width: 768px) {
+    .header-center { display: none; }
+}
+/* OVERRIDE MAP CONTAINER FLEX */
+.map-container {
+    flex: 1;
+    min-height: 400px;
 }
