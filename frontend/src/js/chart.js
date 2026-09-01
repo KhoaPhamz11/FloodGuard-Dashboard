@@ -1,18 +1,63 @@
-// File: chart.js — Vẽ biểu đồ (giữ nguyên logic cũ + thêm hàm cho Layer 6)
-// V2: Thêm renderAllChartsForStation() vẽ 5 biểu đồ cùng lúc cho 1 trạm.
-/*
-destroy(): Lau sạch bảng cũ trước khi vẽ mới
-push() và shift(): Băng chuyền realtime — nhét điểm mới, xóa điểm cũ
-*/
+// File: chart.js — Vẽ biểu đồ ECharts (Real-time Streaming Engine)
+// Nâng cấp: Apache ECharts cho hiệu ứng luân chuyển dữ liệu mượt mà, bounding sliding window.
 
+const STREAMING_CONFIG = {
+    maxDataPoints: 60,
+    updateInterval: 1000,
+    animationDurationUpdate: 800 // Safety margin < 1000ms to finish animation before next tick
+};
 
-// ===== BIẾN TRẠNG THÁI CŨ (giữ nguyên cho tương thích) =====
+// Global States
 let floodChart = null;
 let currentChartStationId = 1;
 let currentChartType = "realtime-rain";
 
+// Sliding window state for Main Chart
+let mainChartData = {
+    labels: [],
+    values: []
+};
 
-// ===== HÀM 1: LẮNG NGHE SỰ KIỆN ĐỔI DROPDOWN (giữ nguyên) =====
+// Layer 6 states
+let reportCharts = []; 
+let currentReportStationId = null;
+let reportChartsData = []; // Array of { labels: [], values: [] }
+
+// Handle global resize
+window.addEventListener('resize', () => {
+    if (floodChart) floodChart.resize();
+    reportCharts.forEach(chart => {
+        if (chart) chart.resize();
+    });
+});
+
+// Common ECharts aesthetic settings for Command Center
+const getCommonEchartsOptions = () => ({
+    animationDurationUpdate: STREAMING_CONFIG.animationDurationUpdate,
+    animationEasingUpdate: 'linear', // Linear provides the smooth continuous sliding effect
+    backgroundColor: 'transparent',
+    grid: { top: 40, right: 30, bottom: 20, left: 40, containLabel: true },
+    tooltip: { 
+        trigger: 'axis', 
+        backgroundColor: 'rgba(13, 17, 51, 0.9)',
+        borderColor: '#00d4ff',
+        textStyle: { color: '#fff' }
+    },
+    xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+        axisLabel: { color: '#8892b0', fontSize: 10 },
+        splitLine: { show: false }
+    },
+    yAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
+        axisLabel: { color: '#8892b0', fontSize: 11 }
+    }
+});
+
+// ===== HÀM 1: LẮNG NGHE SỰ KIỆN ĐỔI DROPDOWN =====
 function initChartEvents() {
     const chartModeSelect = document.getElementById("chart-mode-select");
     if (chartModeSelect) {
@@ -23,8 +68,7 @@ function initChartEvents() {
     }
 }
 
-
-// ===== HÀM 2: QUẢN LÝ LUỒNG VẼ (giữ nguyên) =====
+// ===== HÀM 2: QUẢN LÝ LUỒNG VẼ =====
 async function updateChartForStation(stationId, chartType) {
     currentChartStationId = stationId;
     currentChartType = chartType;
@@ -35,94 +79,124 @@ async function updateChartForStation(stationId, chartType) {
     }
 }
 
-
-// ===== HÀM 3: VẼ BIỂU ĐỒ LỊCH SỬ 6 TIẾNG (giữ nguyên) =====
+// ===== HÀM 3: VẼ BIỂU ĐỒ LỊCH SỬ 6 TIẾNG =====
 async function renderHistoryChart(stationId, chartType) {
     const historyData = await fetchHistoryData();
     if (!historyData || historyData.length === 0) return;
 
-    const labels = [];
-    const dataPoints = [];
+    mainChartData = { labels: [], values: [] }; // Reset array
 
     historyData.forEach(minuteData => {
-        labels.push(minuteData.timestamp);
+        mainChartData.labels.push(minuteData.timestamp);
         const station = minuteData.stations_data.find(s => getStationNumericId(s) === stationId);
         if (station) {
             if (chartType === "history-rain-6h") {
-                dataPoints.push(station.R);
+                mainChartData.values.push(station.R);
             } else if (chartType === "history-tide-6h") {
-                dataPoints.push(station.H_tide);
+                mainChartData.values.push(station.H_tide);
             }
         }
     });
 
-    if (floodChart) floodChart.destroy();
     const ctx = document.getElementById("flood-chart-canvas");
-    if (!ctx) return;  // V2: canvas này không tồn tại trong layout mới, thoát an toàn
+    if (!ctx) return;
+    
+    if (floodChart) floodChart.dispose();
+    floodChart = echarts.init(ctx, 'dark'); // Force dark theme config parsing
 
-    const chartStyle = chartType === "history-rain-6h" ? "bar" : "line";
-    const labelName = chartType === "history-rain-6h" ? "Lượng mưa 6h (mm/phút)" : "Thủy triều 6h (m)";
+    const isRain = chartType === "history-rain-6h";
+    const baseOpt = getCommonEchartsOptions();
 
-    floodChart = new Chart(ctx, {
-        type: chartStyle,
-        data: {
-            labels: labels,
-            datasets: [{
-                label: labelName,
-                data: dataPoints,
-                backgroundColor: "rgba(54, 162, 235, 0.5)",
-                borderColor: "rgba(54, 162, 235, 1)",
-                borderWidth: 1,
-                pointRadius: 0
-            }]
-        },
-        options: { responsive: true }
-    });
+    floodChart.setOption({
+        ...baseOpt,
+        xAxis: { ...baseOpt.xAxis, data: mainChartData.labels },
+        series: [{
+            name: isRain ? 'Lượng mưa' : 'Thủy triều',
+            type: isRain ? 'bar' : 'line',
+            data: mainChartData.values,
+            itemStyle: { color: isRain ? '#00d4ff' : '#a4f4fd' },
+            areaStyle: isRain ? null : {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(0, 212, 255, 0.3)' },
+                    { offset: 1, color: 'rgba(0, 212, 255, 0)' }
+                ])
+            },
+            lineStyle: { width: 2 },
+            showSymbol: false
+        }]
+    }, true);
 }
 
-
-// ===== HÀM 4: KHỞI TẠO BIỂU ĐỒ REALTIME RỖNG (giữ nguyên) =====
+// ===== HÀM 4: KHỞI TẠO BIỂU ĐỒ REALTIME RỖNG =====
 function initRealtimeChart(chartType) {
-    if (floodChart) floodChart.destroy();
     const ctx = document.getElementById("flood-chart-canvas");
-    if (!ctx) return;  // V2: thoát an toàn nếu canvas cũ không tồn tại
+    if (!ctx) return;
 
-    let chartStyle = "line";
-    let labelName = "";
+    if (floodChart) {
+        floodChart.dispose(); // Use dispose to prevent memory leaks when fully recreating
+    }
+    
+    floodChart = echarts.init(ctx, 'dark'); // Initialize correctly with dark mode defaults
+    mainChartData = { labels: [], values: [] }; // Clear sliding window
+
+    let seriesConfig = {};
+    const baseOpt = getCommonEchartsOptions();
 
     if (chartType === "realtime-rain") {
-        chartStyle = "bar";
-        labelName = "Lượng mưa Realtime (mm/phút)";
+        seriesConfig = {
+            name: 'Lượng mưa (mm)',
+            type: 'bar',
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#00d4ff' },
+                    { offset: 1, color: '#1a3a70' }
+                ]),
+                borderRadius: [4, 4, 0, 0]
+            }
+        };
     } else if (chartType === "realtime-drainage") {
-        chartStyle = "line";
-        labelName = "Khả năng thoát nước (mm/phút)";
+        seriesConfig = {
+            name: 'Thoát nước',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#28a745' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(40, 167, 69, 0.4)' },
+                    { offset: 1, color: 'rgba(40, 167, 69, 0)' }
+                ])
+            }
+        };
     } else if (chartType === "realtime-tide") {
-        chartStyle = "line";
-        labelName = "Thủy triều Realtime (m)";
+        seriesConfig = {
+            name: 'Thủy triều (m)',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#7b2ffc' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(123, 47, 252, 0.3)' },
+                    { offset: 1, color: 'rgba(123, 47, 252, 0)' }
+                ])
+            },
+            markLine: {
+                silent: true,
+                symbol: 'none',
+                data: [ { yAxis: 1.5, lineStyle: { color: '#ff9800', type: 'dashed' }, label: { content: 'Cảnh báo' } } ]
+            }
+        };
     }
 
-    floodChart = new Chart(ctx, {
-        type: chartStyle,
-        data: {
-            labels: [],
-            datasets: [{
-                label: labelName,
-                data: [],
-                backgroundColor: "rgba(255, 99, 132, 0.5)",
-                borderColor: "rgba(255, 99, 132, 1)",
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: false
-        }
-    });
+    floodChart.setOption({
+        ...baseOpt,
+        xAxis: { ...baseOpt.xAxis, data: [] },
+        series: [ { ...seriesConfig, data: [] } ]
+    }, true);
 }
 
-
-// ===== HÀM 5: BƠM DỮ LIỆU REALTIME (giữ nguyên) =====
+// ===== HÀM 5: BƠM DỮ LIỆU REALTIME =====
 function updateRealtimeChart(latestData) {
     if (!floodChart || currentChartType.includes("history")) return;
 
@@ -130,172 +204,107 @@ function updateRealtimeChart(latestData) {
     if (!station) return;
 
     let newValue = 0;
-    if (currentChartType === "realtime-rain")     newValue = station.R;
+    if (currentChartType === "realtime-rain") newValue = station.R;
     else if (currentChartType === "realtime-drainage") newValue = station.D;
-    else if (currentChartType === "realtime-tide")     newValue = station.H_tide;
+    else if (currentChartType === "realtime-tide") newValue = station.H_tide;
 
-    floodChart.data.labels.push(latestData.timestamp);
-    floodChart.data.datasets[0].data.push(newValue);
+    // Data manager logic
+    mainChartData.labels.push(latestData.timestamp.split(' ')[1]); // Only keep time HH:mm:ss
+    mainChartData.values.push(newValue);
 
-    if (floodChart.data.labels.length > 60) {
-        floodChart.data.labels.shift();
-        floodChart.data.datasets[0].data.shift();
+    if (mainChartData.labels.length > STREAMING_CONFIG.maxDataPoints) {
+        mainChartData.labels.shift();
+        mainChartData.values.shift();
     }
 
-    floodChart.update();
+    // Standard setOption for smooth diffing
+    floodChart.setOption({
+        xAxis: { data: mainChartData.labels },
+        series: [{ data: mainChartData.values }]
+    });
 }
 
-
 // ===========================================================================
-//  V2 MỚI: LAYER 6 — VẼ 5 BIỂU ĐỒ CHO 1 TRẠM
+//  LAYER 6 — VẼ 5 BIỂU ĐỒ CHO 1 TRẠM
 // ===========================================================================
-
-let reportCharts = [];           // Mảng lưu 5 Chart instances
-let currentReportStationId = null;  // Trạm đang được xem báo cáo
-
 async function renderAllChartsForStation(stationId) {
-    // 1. Dọn dẹp biểu đồ cũ
-    reportCharts.forEach(c => { if (c) c.destroy(); });
+    // Clean up old instances
+    reportCharts.forEach(c => { if (c) c.dispose(); });
     reportCharts = [];
+    reportChartsData = [];
     currentReportStationId = stationId;
 
     const grid = document.getElementById("reports-grid");
     if (!grid) return;
     grid.innerHTML = "";
 
-    // Cập nhật tiêu đề
     const nameEl = document.getElementById("reports-station-name");
     if (nameEl && typeof getStationDisplayName === "function") {
         nameEl.textContent = getStationDisplayName(stationId);
     }
 
-    // 2. Cấu hình 5 biểu đồ
     const chartConfigs = [
-        {
-            title: "🌧️ Lượng mưa Realtime",
-            type: "bar", field: "R",
-            label: "Lượng mưa (mm/phút)",
-            bg: "rgba(255, 99, 132, 0.5)", border: "rgba(255, 99, 132, 1)",
-            isHistory: false
-        },
-        {
-            title: "🚰 Khả năng thoát nước Realtime",
-            type: "line", field: "D",
-            label: "Thoát nước (mm/phút)",
-            bg: "rgba(75, 192, 192, 0.5)", border: "rgba(75, 192, 192, 1)",
-            isHistory: false
-        },
-        {
-            title: "🌊 Thủy triều Realtime",
-            type: "line", field: "H_tide",
-            label: "Thủy triều (m)",
-            bg: "rgba(153, 102, 255, 0.5)", border: "rgba(153, 102, 255, 1)",
-            isHistory: false
-        },
-        {
-            title: "📊 Lượng mưa 6 tiếng",
-            type: "bar", field: "R",
-            label: "Lượng mưa 6h (mm/phút)",
-            bg: "rgba(54, 162, 235, 0.5)", border: "rgba(54, 162, 235, 1)",
-            isHistory: true
-        },
-        {
-            title: "📈 Thủy triều 6 tiếng",
-            type: "line", field: "H_tide",
-            label: "Thủy triều 6h (m)",
-            bg: "rgba(255, 206, 86, 0.5)", border: "rgba(255, 206, 86, 1)",
-            isHistory: true
-        }
+        { title: "🌧️ Lượng mưa Realtime", type: "bar", field: "R", color: "#00d4ff", isHistory: false },
+        { title: "🚰 Thoát nước Realtime", type: "line", field: "D", color: "#28a745", isHistory: false },
+        { title: "🌊 Thủy triều Realtime", type: "line", field: "H_tide", color: "#7b2ffc", isHistory: false },
+        { title: "📊 Lượng mưa 6 tiếng", type: "bar", field: "R", color: "#ff9800", isHistory: true },
+        { title: "📈 Thủy triều 6 tiếng", type: "line", field: "H_tide", color: "#ff0040", isHistory: true }
     ];
 
-    // 3. Lấy data lịch sử 1 lần cho 2 biểu đồ history
     let historyData = null;
-    try {
-        historyData = await fetchHistoryData();
-    } catch (e) {
-        console.error("Lỗi lấy dữ liệu history cho reports:", e);
-    }
+    try { historyData = await fetchHistoryData(); } catch (e) {}
 
-    // 4. Tạo 5 biểu đồ
+    const baseOpt = getCommonEchartsOptions();
+    
     chartConfigs.forEach((config, index) => {
-        // Tạo container
         const box = document.createElement("div");
         box.className = "report-chart-box liquid-glass hover-motion-card";
-
-        const canvasId = `report-chart-${index}`;
+        const canvasId = `report-chart-canvas-${index}`;
+        
         box.innerHTML = `
-            <h4>${config.title}</h4>
-            <div class="report-chart-wrapper">
-                <canvas id="${canvasId}"></canvas>
-            </div>
+            <h4>${config.title} <span class="live-indicator" style="display:${config.isHistory ? 'none' : 'inline-block'}; width:8px; height:8px; background:#ff0040; border-radius:50%; margin-left:6px; animation: live-pulse 2s infinite;"></span></h4>
+            <div class="report-chart-wrapper" id="${canvasId}" style="height:220px; width:100%;"></div>
         `;
         grid.appendChild(box);
 
         const ctx = document.getElementById(canvasId);
-        if (!ctx) return;
+        const chart = echarts.init(ctx, 'dark');
+        
+        let labels = [];
+        let values = [];
 
         if (config.isHistory && historyData && historyData.length > 0) {
-            // ===== Biểu đồ lịch sử: có sẵn data =====
-            const labels = [];
-            const dataPoints = [];
-
-            historyData.forEach(minuteData => {
-                labels.push(minuteData.timestamp);
-                const station = minuteData.stations_data.find(s => getStationNumericId(s) === stationId);
-                if (station) {
-                    dataPoints.push(station[config.field]);
-                }
+            historyData.forEach(m => {
+                labels.push(m.timestamp.split(' ')[1]);
+                const st = m.stations_data.find(s => getStationNumericId(s) === stationId);
+                if (st) values.push(st[config.field]);
             });
-
-            const chart = new Chart(ctx, {
-                type: config.type,
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: config.label,
-                        data: dataPoints,
-                        backgroundColor: config.bg,
-                        borderColor: config.border,
-                        borderWidth: 1,
-                        pointRadius: 0,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-            reportCharts.push(chart);
-
-        } else {
-            // ===== Biểu đồ realtime: bắt đầu rỗng, cập nhật mỗi giây =====
-            const chart = new Chart(ctx, {
-                type: config.type,
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: config.label,
-                        data: [],
-                        backgroundColor: config.bg,
-                        borderColor: config.border,
-                        borderWidth: 2,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false
-                }
-            });
-            reportCharts.push(chart);
         }
+
+        reportChartsData.push({ labels, values });
+        reportCharts.push(chart);
+
+        chart.setOption({
+            ...baseOpt,
+            xAxis: { ...baseOpt.xAxis, data: labels },
+            series: [{
+                name: config.title,
+                type: config.type,
+                smooth: true,
+                showSymbol: false,
+                data: values,
+                itemStyle: { color: config.color },
+                areaStyle: config.type === 'line' ? {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: config.color.replace(')', ', 0.3)').replace('rgb', 'rgba') },
+                        { offset: 1, color: 'rgba(0,0,0,0)' }
+                    ])
+                } : null
+            }]
+        }, true);
     });
 }
 
-
-// ===== CẬP NHẬT 3 BIỂU ĐỒ REALTIME TRONG LAYER 6 (gọi mỗi giây) =====
 function updateReportCharts(latestData) {
     if (!currentReportStationId || reportCharts.length === 0) return;
 
@@ -304,22 +313,25 @@ function updateReportCharts(latestData) {
     );
     if (!station) return;
 
-    // Chỉ cập nhật 3 biểu đồ realtime đầu tiên (index 0, 1, 2)
     const realtimeFields = ["R", "D", "H_tide"];
+    const timeStr = latestData.timestamp.split(' ')[1];
 
     for (let i = 0; i < 3; i++) {
         const chart = reportCharts[i];
         if (!chart) continue;
 
-        chart.data.labels.push(latestData.timestamp);
-        chart.data.datasets[0].data.push(station[realtimeFields[i]]);
+        const dataObj = reportChartsData[i];
+        dataObj.labels.push(timeStr);
+        dataObj.values.push(station[realtimeFields[i]]);
 
-        // Giới hạn 60 điểm (giống logic cũ)
-        if (chart.data.labels.length > 60) {
-            chart.data.labels.shift();
-            chart.data.datasets[0].data.shift();
+        if (dataObj.labels.length > STREAMING_CONFIG.maxDataPoints) {
+            dataObj.labels.shift();
+            dataObj.values.shift();
         }
 
-        chart.update();
+        chart.setOption({
+            xAxis: { data: dataObj.labels },
+            series: [{ data: dataObj.values }]
+        });
     }
 }

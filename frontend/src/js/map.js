@@ -17,7 +17,10 @@ const MAP_ZOOM_FULL = 11;
 const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_OPTIONS = {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+    attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    keepBuffer: 4,               // Giữ bản đồ cũ làm nền đệm, chống chớp trắng
+    updateWhenZooming: false,    // Không nã request trong lúc đang zoom
+    updateWhenIdle: true         // Đợi thả chuột mới tải bản đồ
 };
 
 // ===== KHỞI TẠO BẢN ĐỒ NHỎ (Layer 1) =====

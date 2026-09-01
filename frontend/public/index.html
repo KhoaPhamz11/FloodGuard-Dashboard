@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="../src/css/motion.css">
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 </head>
 <body>
     <div class="cinematic-noise"></div>
@@ -142,20 +142,6 @@
                     </div>
                 </div>
 
-                <!-- BOTTOM PANEL: REALTIME CHART -->
-                <div class="card chart-panel motion-fade-up motion-p5 liquid-glass hover-motion-card" style="margin-top: 20px;">
-                    <div class="card-header macos-frame">
-                        <h3>📈 Biểu đồ quan trắc Realtime</h3>
-                        <select id="chart-mode-select" class="chart-select" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 4px 8px; font-size: 12px; font-family: inherit;">
-                            <option value="realtime-rain">Lượng mưa (mm/phút)</option>
-                            <option value="realtime-drainage">Khả năng thoát nước</option>
-                            <option value="realtime-tide">Thủy triều</option>
-                        </select>
-                    </div>
-                    <div class="chart-container" style="height: 250px; padding: 15px;">
-                        <canvas id="flood-chart-canvas"></canvas>
-                    </div>
-                </div>
             </div>
 
             <!-- ===== LAYER 2: FULLSCREEN MAP ===== -->
