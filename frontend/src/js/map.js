@@ -23,6 +23,13 @@ const MAP_STYLE = {
                 "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             ],
             "tileSize": 256
+        },
+        "esri-dark-labels": {
+            "type": "raster",
+            "tiles": [
+                "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+            ],
+            "tileSize": 256
         }
     },
     "layers": [
@@ -30,6 +37,13 @@ const MAP_STYLE = {
             "id": "esri-dark-layer",
             "type": "raster",
             "source": "esri-dark",
+            "minzoom": 0,
+            "maxzoom": 16
+        },
+        {
+            "id": "esri-dark-labels-layer",
+            "type": "raster",
+            "source": "esri-dark-labels",
             "minzoom": 0,
             "maxzoom": 16
         }
