@@ -115,14 +115,14 @@ function updateAlertCenter(latestData) {
         // code = 0: An toàn, 1: Cảnh báo nhẹ, 2: Cảnh báo nặng, 3: Nghiêm trọng
         if (station.code > 0) {
             let severity = 'info';
-            let titlePrefix = '<svg class="feather status-icon info" width="16" height="16" viewBox="0 0 24 24" fill="#29b6f6" stroke="#29b6f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> CẢNH BÁO NHẸ';
+            let titlePrefix = 'Cảnh báo nhẹ';
             
             if (station.code === 2) {
                 severity = 'warning';
-                titlePrefix = '<svg class="feather status-icon warning" width="16" height="16" viewBox="0 0 24 24" fill="#f57c00" stroke="#f57c00" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> CẢNH BÁO NẶNG';
+                titlePrefix = 'Cảnh báo nặng';
             } else if (station.code === 3) {
                 severity = 'critical';
-                titlePrefix = '<svg class="feather status-icon critical" width="16" height="16" viewBox="0 0 24 24" fill="#e53935" stroke="#e53935" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> NGHIÊM TRỌNG';
+                titlePrefix = 'Nghiêm trọng';
             }
 
             const alertItem = {
@@ -145,7 +145,7 @@ function updateAlertCenter(latestData) {
             if (wasAlerted) {
                 historyData.unshift({
                     time: currentTime,
-                    title: '<svg class="feather status-icon safe" width="16" height="16" viewBox="0 0 24 24" fill="#43a047" stroke="#43a047" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg> AN TOÀN',
+                    title: 'An toàn',
                     stationName: station.station_name,
                     stationObj: station
                 });
@@ -215,11 +215,22 @@ function updateBadges() {
 }
 
 // Deleted timeline functions
+window.expandedStationNames = window.expandedStationNames || new Set();
 function renderActiveAlerts() {
+    
     const list = document.getElementById('active-alerts-list');
     if (!list) return;
 
+    // --- PAUSE UPDATES IF USER IS INTERACTING ---
+    // If the user has scrolled down OR has expanded a card, pause the UI refresh
+    // so they don't lose their place or see flickering.
+    if (list.scrollTop > 10 || (window.expandedStationNames && window.expandedStationNames.size > 0)) {
+        return;
+    }
+    // --------------------------------------------
+
     list.innerHTML = '';
+
 
     // Filter
     let filtered = alertsData;
@@ -245,7 +256,8 @@ function renderActiveAlerts() {
 
     filtered.forEach(alert => {
         const card = document.createElement('div');
-        card.className = `alert-card ${alert.severity} ${alert.severity === 'critical' ? 'pulse' : ''}`;
+        let isExpanded = window.expandedStationNames.has(alert.stationName) ? 'expanded' : '';
+        card.className = `alert-card ${alert.severity} ${isExpanded}`;
         
         let districtName = alert.stationName;
         // Lookup station location if possible
@@ -256,13 +268,13 @@ function renderActiveAlerts() {
         }
 
         card.innerHTML = `
-            <div class="alert-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+            <div class="alert-card-header" onclick="this.parentElement.classList.toggle('expanded'); if(this.parentElement.classList.contains('expanded')) { window.expandedStationNames.add('${alert.stationName}'); } else { window.expandedStationNames.delete('${alert.stationName}'); }">
                 <div class="ac-left">
                     <div class="ac-level">${alert.title}</div>
                     <div class="ac-title">Trạm: ${districtName}</div>
                     <div class="ac-summary-grid">
                         <div>Mực nước: ${alert.waterLevel} m</div>
-                        <div>Lượng mưa: ${alert.rain} mm</div>
+                        
                     </div>
                 </div>
                 <div class="ac-right">
