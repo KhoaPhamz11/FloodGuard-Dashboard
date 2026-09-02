@@ -1,5 +1,5 @@
 // File: notification.js — Quản lý thông báo / cảnh báo
-// V2: Thêm icon tam giác ⚠ với màu theo status, hỗ trợ cả Layer 1 (gần nhất) và Layer 3 (tất cả).
+// V2: Thêm icon tam giác <svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> với màu theo status, hỗ trợ cả Layer 1 (gần nhất) và Layer 3 (tất cả).
 
 
 // ===== HÀM 1: CẬP NHẬT THÔNG BÁO GẦN NHẤT (Layer 1) =====
@@ -62,9 +62,9 @@ function createNotificationItem(feedElement, timeString, station) {
         : null;
     const districtName = loc ? loc.district : station.station_name;
 
-    // Tạo HTML cho dòng thông báo (thêm icon ⚠ tam giác + tên quận)
+    // Tạo HTML cho dòng thông báo (thêm icon <svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> tam giác + tên quận)
     alertItem.innerHTML = `
-        <span class="alert-icon" style="color: ${iconColor};">⚠</span>
+        <span class="alert-icon" style="color: ${iconColor};"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
         <div class="alert-content">
             <strong>[${timeString}] Trạm ${districtName}</strong><br>
             <span>Trạng thái: <b>${station.description}</b></span><br>

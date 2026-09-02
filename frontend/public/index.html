@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="../src/css/style.css">
     <link rel="stylesheet" href="../src/css/dashboard.css">
     <link rel="stylesheet" href="../src/css/motion.css">
+    <link rel="stylesheet" href="../src/css/alert-center.css">
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
     <!-- Turf.js for Geospatial Analysis -->
@@ -27,34 +28,39 @@
         <!-- ===== SIDEBAR NAVIGATION ===== -->
         <nav class="sidebar glass-panel motion-slide-right" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo hover-motion-icon">🌊</div>
+                <div class="sidebar-logo hover-motion-icon"><svg class="feather" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg></div>
                 <div class="sidebar-title">FloodGuard</div>
                 <div class="sidebar-subtitle">Hệ thống cảnh báo ngập AIoT</div>
             </div>
             <ul class="sidebar-menu">
                 <li class="sidebar-item active hover-motion-icon" data-layer="main">
-                    <span class="icon">🏠</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
                     <span class="sidebar-text">Tổng quan</span>
                 </li>
                 <li class="sidebar-item hover-motion-icon" data-layer="fullmap">
-                    <span class="icon">🗺️</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg></span>
                     <span class="sidebar-text">Bản đồ lớn</span>
                 </li>
                 <!-- MỚI: TÍNH NĂNG CHỈ ĐƯỜNG TRÁNH NGẬP -->
                 <li class="sidebar-item hover-motion-icon" data-layer="navigation">
-                    <span class="icon">🧭</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg></span>
                     <span class="sidebar-text">Dẫn đường tránh ngập</span>
                 </li>
                 <li class="sidebar-item hover-motion-icon" data-layer="stations-picker">
-                    <span class="icon">📍</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
                     <span class="sidebar-text">Các trạm đo</span>
                 </li>
                 <li class="sidebar-item hover-motion-icon" data-layer="reports-picker">
-                    <span class="icon">📈</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
                     <span class="sidebar-text">Báo cáo</span>
                 </li>
+                <li class="sidebar-item hover-motion-icon" id="sidebarAlertBtn">
+                    <span class="icon" style="color: #00ffff;"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
+                    <span class="sidebar-text">CẢNH BÁO</span>
+                    <span class="sidebar-badge" id="sidebarAlertBadge" style="display:none">0</span>
+                </li>
                 <li class="sidebar-item hover-motion-icon" data-layer="settings">
-                    <span class="icon">⚙️</span>
+                    <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
                     <span class="sidebar-text">Cài đặt</span>
                 </li>
             </ul>
@@ -71,7 +77,7 @@
             </div>
 
             <div class="sidebar-bottom sidebar-item hover-motion-icon" data-layer="main" id="backBtn" style="display: none;">
-                <span class="icon">🚪</span>
+                <span class="icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
                 <span class="sidebar-text">Quay lại</span>
             </div>
         </nav>
@@ -84,9 +90,12 @@
                     <h1>FLOODGUARD</h1>
                     <span class="header-subtitle">Urban Flood Monitoring Command Center</span>
                 </div>
-                <div class="header-center">
+                <div class="header-center" style="display: flex; align-items: center;">
                     <span class="header-badge green"><span class="status-dot green"></span> SYSTEM ONLINE</span>
                     <span class="header-badge blue">MQTT ACTIVE</span>
+                    <button class="header-alert-btn hover-motion-btn" id="headerAlertBtn">
+                        <svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> <span class="alert-badge hidden" id="headerAlertBadge">0</span>
+                    </button>
                 </div>
                 <div class="header-time" id="currentTime"></div>
             </header>
@@ -117,7 +126,7 @@
                     <!-- MAIN MAP -->
                     <div class="card map-card motion-fade-up motion-p4 liquid-glass hover-motion-card">
                         <div class="card-header macos-frame">
-                            <h3>🗺️ Bản đồ quan trắc Realtime</h3>
+                            <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg> Bản đồ quan trắc Realtime</h3>
                         </div>
                         <div class="map-container" id="main-map-container">
                             <div id="main-map" class="map-motion-entrance"></div>
@@ -131,7 +140,7 @@
                     <div class="right-col-grid">
                         <div class="card ai-card motion-fade-up motion-p3 liquid-glass hover-motion-card">
                             <div class="card-header macos-frame">
-                                <h3>🧠 AI Flood Intelligence</h3>
+                                <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path></svg> AI Flood Intelligence</h3>
                             </div>
                             <div class="ai-analysis-reveal ai-content">
                                 <h4>DỰ BÁO XU HƯỚNG</h4>
@@ -143,7 +152,7 @@
 
                         <div class="card notification-card motion-fade-up motion-p5 liquid-glass hover-motion-card">
                             <div class="card-header">
-                                <h3>⚠️ Cảnh báo gần nhất</h3>
+                                <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>️ Cảnh báo gần nhất</h3>
                                 <a class="view-all-link hover-motion-btn" id="btnViewAllAlerts" href="#">Tất cả ›</a>
                             </div>
                             <div class="notification-feed motion-stagger-children" id="main-notification-feed">
@@ -158,7 +167,7 @@
             <div class="layer-container" id="layer-fullmap">
                 <div class="card fullmap-card motion-fade-up motion-p2 liquid-glass">
                     <div class="card-header macos-frame">
-                        <h3>🗺️ Bản đồ ngập lụt toàn cảnh</h3>
+                        <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg> Bản đồ ngập lụt toàn cảnh</h3>
                     </div>
                     <div class="map-container">
                         <div id="fullscreen-map"></div>
@@ -173,18 +182,18 @@
                     <!-- Search Panel (Nổi phía trên map) -->
                     <div class="navigation-search-panel liquid-glass motion-fade-down">
                         <div class="nav-search-header">
-                            <h3>🧭 Flood-Aware Route</h3>
+                            <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg> Flood-Aware Route</h3>
                         </div>
                         <div class="nav-inputs">
                             <div class="nav-input-row">
-                                <span class="nav-icon start-icon">📍</span>
+                                <span class="nav-icon start-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
                                 <div class="nav-input-wrapper">
                                     <input type="text" id="nav-start-input" class="nav-input" placeholder="Điểm xuất phát..." autocomplete="off">
                                     <div class="nav-suggestions" id="nav-start-suggestions" style="display: none;"></div>
                                 </div>
                             </div>
                             <div class="nav-input-row">
-                                <span class="nav-icon end-icon">🏁</span>
+                                <span class="nav-icon end-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></span>
                                 <div class="nav-input-wrapper" style="display: flex; gap: 8px;">
                                     <input type="text" id="nav-end-input" class="nav-input" placeholder="Điểm đến..." autocomplete="off">
                                     <button id="nav-submit-btn" class="nav-submit-btn" title="Tìm đường">➔</button>
@@ -235,7 +244,7 @@
                             </div>
                             <div class="water-surface"></div>
                             <div class="water-station-logo">
-                                <div class="water-logo-mark hover-motion-icon">📡</div>
+                                <div class="water-logo-mark hover-motion-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg></div>
                                 <span class="water-station-name" id="detail-station-name">--</span>
                             </div>
                             <div class="water-tagline">
@@ -251,7 +260,7 @@
                     <!-- Right: Metrics Card -->
                     <div class="station-detail-right motion-fade-up liquid-glass">
                         <div class="detail-metrics-header">
-                            <h3 id="detail-title">📡 Thông tin chi tiết trạm</h3>
+                            <h3 id="detail-title"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> Thông tin chi tiết trạm</h3>
                             <span class="detail-coords" id="detail-coords">--</span>
                         </div>
                         <div class="detail-metrics-grid motion-stagger-children" id="detail-metrics-grid">
@@ -265,7 +274,7 @@
             <div class="layer-container" id="layer-reports">
                 <div class="card reports-card motion-fade-up motion-p2 liquid-glass">
                     <div class="card-header macos-frame">
-                        <h3>📊 Báo cáo & Thống kê — <span id="reports-station-name">--</span></h3>
+                        <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Báo cáo & Thống kê — <span id="reports-station-name">--</span></h3>
                     </div>
                     <div class="reports-grid motion-stagger-children" id="reports-grid"></div>
                 </div>
@@ -278,10 +287,91 @@
     <div class="modal-overlay" id="stationPickerModal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="pickerModalTitle">📡 Chọn trạm quan trắc</h3>
+                <h3 id="pickerModalTitle"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> Chọn trạm quan trắc</h3>
                 <button class="modal-close" id="modalClose">&times;</button>
             </div>
             <div class="modal-body" id="stationPickerList"></div>
+        </div>
+    </div>
+
+    <!-- ===== ALERT CENTER DRAWER ===== -->
+    <div class="alert-center-drawer" id="alertCenterDrawer">
+        <div class="alert-center-header">
+            <h2><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> TRUNG TÂM CẢNH BÁO</h2>
+            <button class="close-alert-btn" id="closeAlertBtn">&times;</button>
+        </div>
+        
+        <div class="alert-center-tabs">
+            <button class="alert-tab active" data-tab="active-alerts">CẢNH BÁO HIỆN TẠI</button>
+            <button class="alert-tab" data-tab="history">LỊCH SỬ</button>
+            <button class="alert-tab" data-tab="subscriptions">ĐĂNG KÝ CẢNH BÁO</button>
+        </div>
+
+        <div class="alert-center-content">
+            <!-- TAB: CẢNH BÁO HIỆN TẠI -->
+            <div class="alert-tab-content active" id="tab-active-alerts">
+                <!-- TỔNG QUAN (HORIZONTAL) -->
+                <div class="alert-summary-horizontal">
+                    <div class="summary-item critical">
+                        <span class="count" id="count-critical">0</span>
+                        <span class="label">NGHIÊM TRỌNG</span>
+                    </div>
+                    <div class="summary-item warning">
+                        <span class="count" id="count-warning">0</span>
+                        <span class="label">CẢNH BÁO NẶNG</span>
+                    </div>
+                    <div class="summary-item info">
+                        <span class="count" id="count-info">0</span>
+                        <span class="label">CẢNH BÁO NHẸ</span>
+                    </div>
+                    <div class="summary-item safe">
+                        <span class="count" id="count-safe">0</span>
+                        <span class="label">AN TOÀN</span>
+                    </div>
+                </div>
+
+                <!-- CẢNH BÁO HIỆN TẠI (MAIN) -->
+                <div class="active-alerts-col">
+                    <div class="alerts-controls">
+                        <h3>CẢNH BÁO HIỆN TẠI</h3>
+                        <div class="filters-sort">
+                            <select id="alert-filter-type" class="alert-select">
+                                <option value="all">TẤT CẢ ▼</option>
+                                <option value="station">TRẠM ▼</option>
+                                <option value="route">TUYẾN ĐƯỜNG ▼</option>
+                                <option value="rain">LƯỢNG MƯA ▼</option>
+                                <option value="system">HỆ THỐNG ▼</option>
+                            </select>
+                            <select id="alert-sort" class="alert-select">
+                                <option value="newest">MỚI NHẤT ▼</option>
+                                <option value="oldest">CŨ NHẤT ▼</option>
+                                <option value="critical">NGHIÊM TRỌNG NHẤT ▼</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alerts-list" id="active-alerts-list">
+                        <div class="empty-state">Đang tải dữ liệu cảnh báo...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: LỊCH SỬ -->
+            <div class="alert-tab-content" id="tab-history">
+                <div class="alerts-list" id="history-alerts-list">
+                    <div class="empty-state">Chưa có dữ liệu lịch sử cảnh báo.</div>
+                </div>
+            </div>
+
+            <!-- TAB: ĐĂNG KÝ CẢNH BÁO -->
+            <div class="alert-tab-content" id="tab-subscriptions">
+                <div class="subscription-form">
+                    <label class="sub-checkbox"><input type="checkbox" checked> Cảnh báo nghiêm trọng</label>
+                    <label class="sub-checkbox"><input type="checkbox" checked> Cảnh báo nặng</label>
+                    <label class="sub-checkbox"><input type="checkbox" checked> Cảnh báo tuyến đường</label>
+                    <label class="sub-checkbox"><input type="checkbox" checked> Cảnh báo trạm</label>
+                    <label class="sub-checkbox"><input type="checkbox"> Cảnh báo lượng mưa</label>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -290,6 +380,7 @@
     <script src="../src/js/stations.js"></script>
     <script src="../src/js/chart.js"></script>
     <script src="../src/js/notification.js"></script>
+    <script src="../src/js/alerts.js"></script>
     <script src="../src/js/map.js"></script>
     <script src="../src/js/navigation.js"></script>
     <script src="../src/js/layout.js"></script>

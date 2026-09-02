@@ -123,6 +123,11 @@ function updateDashboardUI(latestData) {
 
     // Module 8: Cập nhật Command Center KPIs (New Layout)
     updateCommandCenterKPIs(latestData);
+
+    // Module 9: Cập nhật Alert Center
+    if (typeof updateAlertCenter === "function") {
+        updateAlertCenter(latestData);
+    }
 }
 
 function updateCommandCenterKPIs(latestData) {
