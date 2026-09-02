@@ -10,6 +10,7 @@ let lastKnownFloodData = null;
 const FLOOD_ALERT_RADIUS_KM = 2; // Bán kính cảnh báo 2km
 const NAV_MAP_STYLE = {
     "version": 8,
+    "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     "sources": {
         "esri-dark": {
             "type": "raster",
@@ -27,6 +28,10 @@ const NAV_MAP_STYLE = {
         { "id": "esri-dark-labels-layer", "type": "raster", "source": "esri-dark-labels", "minzoom": 0, "maxzoom": 16 }
     ]
 };
+
+let startMarker = null;
+let endMarker = null;
+let navMarkers = {}; // Trạm (stations) trên map
 
 // 1. Khởi tạo MapLibre riêng cho Navigation
 function initNavigationMap() {
@@ -76,26 +81,20 @@ function initNavigationMap() {
             'filter': ['==', 'risk', 'danger']
         });
         
-        // Marker Sources
-        navMapInstance.addSource('nav-markers-source', {
-            'type': 'geojson',
-            'data': turf.featureCollection([])
-        });
-        navMapInstance.addLayer({
-            'id': 'nav-markers-layer',
-            'type': 'circle',
-            'source': 'nav-markers-source',
-            'paint': {
-                'circle-radius': 8,
-                'circle-color': ['match', ['get', 'type'], 'start', '#28a745', 'end', '#ff9800', '#fff'],
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#fff'
-            }
-        });
+        // Source & Layer cho Tên Đường (Labels) đã bị xóa để dùng HTML Markers hỗ trợ Tiếng Việt
+        
+        // Khởi tạo Marker cho các trạm giống như bên main map
+        if (typeof createMarkersForMap === 'function') {
+            createMarkersForMap(navMapInstance, navMarkers, "nav");
+        }
 
         // Áp dụng lại Flood Data nếu có sẵn trước khi map load
         if (lastKnownFloodData) {
             updateNavigationFloodData(lastKnownFloodData);
+            // Đồng bộ màu sắc trạm ngay lập tức
+            if (typeof updateMapMarkers === 'function' && lastKnownFloodData.stations_data) {
+                updateMapMarkers(lastKnownFloodData.stations_data);
+            }
         }
     });
 }
@@ -230,6 +229,72 @@ async function fetchRoute() {
         const routeFeature = data.features[0];
         currentRouteGeoJSON = routeFeature;
         
+        // Trích xuất tên đường để làm sáng lên bằng HTML Markers (Hỗ trợ Tiếng Việt tốt nhất)
+        if (typeof routeLabelMarkers === 'undefined') {
+            window.routeLabelMarkers = [];
+        }
+        // Xóa các marker cũ
+        window.routeLabelMarkers.forEach(m => m.remove());
+        window.routeLabelMarkers = [];
+
+        const steps = routeFeature.properties.segments[0].steps;
+        const coords = routeFeature.geometry.coordinates;
+        
+        if (steps) {
+            steps.forEach(step => {
+                if (step.name && step.name !== '-' && step.way_points) {
+                    const startIdx = step.way_points[0];
+                    const endIdx = step.way_points[1];
+                    const stepCoords = coords.slice(startIdx, endIdx + 1);
+                    
+                    if (stepCoords.length > 1) {
+                        const line = turf.lineString(stepCoords);
+                        const length = turf.length(line);
+                        
+                        // Lấy điểm giữa đoạn
+                        const midPoint = turf.along(line, length / 2).geometry.coordinates;
+                        
+                        // Tính góc nghiêng
+                        let bearing = 0;
+                        if (length > 0.01) {
+                            const p1 = turf.along(line, Math.max(0, (length / 2) - 0.005)).geometry.coordinates;
+                            const p2 = turf.along(line, Math.min(length, (length / 2) + 0.005)).geometry.coordinates;
+                            bearing = turf.bearing(turf.point(p1), turf.point(p2));
+                        }
+                        
+                        // Xoay sao cho chữ đọc xuôi
+                        let rotation = bearing - 90;
+                        if (rotation > 90 || rotation < -90) {
+                            rotation += 180;
+                        }
+
+                        // Tạo DOM Element
+                        const el = document.createElement('div');
+                        el.innerText = step.name;
+                        el.style.color = '#ffffff';
+                        el.style.fontSize = '12px';
+                        el.style.fontWeight = 'bold';
+                        el.style.textShadow = '0px 0px 4px #000000, 0px 0px 4px #000000, 0px 0px 4px #000000'; // Hiệu ứng sáng nổi bật
+                        el.style.pointerEvents = 'none'; // Không cản trở click map
+                        el.style.whiteSpace = 'nowrap';
+                        el.style.transform = `translate(-50%, -50%)`;
+
+                        // Thêm Marker
+                        const marker = new maplibregl.Marker({
+                            element: el,
+                            rotation: rotation,
+                            rotationAlignment: 'map',
+                            pitchAlignment: 'map'
+                        })
+                        .setLngLat(midPoint)
+                        .addTo(navMapInstance);
+                        
+                        window.routeLabelMarkers.push(marker);
+                    }
+                }
+            });
+        }
+
         // Cập nhật Metrics
         const props = routeFeature.properties;
         const distKm = (props.segments[0].distance / 1000).toFixed(1);
@@ -306,12 +371,32 @@ async function handleGeocode(inputId, suggId, setCoordsCallback) {
 }
 
 function updateMarkers() {
-    const features = [];
-    if (currentStartCoords) features.push(turf.point(currentStartCoords, { type: 'start' }));
-    if (currentEndCoords) features.push(turf.point(currentEndCoords, { type: 'end' }));
+    if (currentStartCoords) {
+        if (!startMarker) {
+            const el = document.createElement('div');
+            el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L20 21L12 17L4 21L12 2Z" fill="#1E88E5" stroke="#FFFFFF" stroke-width="2"/></svg>`;
+            el.style.transform = "translate(-50%, -50%)"; // Center
+            el.style.cursor = "pointer";
+            startMarker = new maplibregl.Marker({ element: el })
+                .setLngLat(currentStartCoords)
+                .addTo(navMapInstance);
+        } else {
+            startMarker.setLngLat(currentStartCoords);
+        }
+    }
     
-    if (navMapInstance && navMapInstance.getSource('nav-markers-source')) {
-        navMapInstance.getSource('nav-markers-source').setData(turf.featureCollection(features));
+    if (currentEndCoords) {
+        if (!endMarker) {
+            const el = document.createElement('div');
+            // Marker đỏ có chấm tròn ở giữa giống google maps
+            el.innerHTML = `<svg width="28" height="42" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 24 12 24s12-15 12-24c0-6.63-5.37-12-12-12z" fill="#EA4335"/><circle cx="12" cy="12" r="4.5" fill="#7D1308"/></svg>`;
+            el.style.cursor = "pointer";
+            endMarker = new maplibregl.Marker({ element: el, offset: [0, -21] }) // offset y bằng -1/2 height (42/2) để ghim tại mũi nhọn
+                .setLngLat(currentEndCoords)
+                .addTo(navMapInstance);
+        } else {
+            endMarker.setLngLat(currentEndCoords);
+        }
     }
 }
 

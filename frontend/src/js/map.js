@@ -143,7 +143,7 @@ function updateMapMarkers(stationsData) {
         const status = getStatusFromCode(station.code);
         const markerClass = `marker-${status.toLowerCase()}`;
 
-        ["main", "full"].forEach(prefix => {
+        ["main", "full", "nav"].forEach(prefix => {
             const markerEl = document.getElementById(`marker-${prefix}-${id}`);
             if (markerEl) {
                 markerEl.className = `map-marker ${markerClass}`;
