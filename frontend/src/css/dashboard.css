@@ -1046,4 +1046,37 @@
 .water-box[data-status="CRITICAL"] .radar-pulse { border-color: #e53935; }
 .water-box[data-status="WARNING"] .radar-pulse { border-color: #f57c00; }
 .water-box[data-status="ADVISORY"] .radar-pulse { border-color: #fdd835; }
-.station-picker-btn { font-size: 1.25rem !important; font-weight: 700 !important; padding: 25px 15px !important; } 
+ 
+
+/* Refined Station Picker Typography */
+.station-picker-btn { 
+    font-size: 15px !important; 
+    font-weight: 500 !important; 
+    line-height: 1.4 !important;
+    padding: 18px 12px !important;
+    color: #e0e0e0;
+    transition: all 0.2s ease;
+    /* Restored base styles */
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+.station-picker-btn:hover, .station-picker-btn:focus, .station-picker-btn.active {
+    font-weight: 600 !important;
+    color: #fff;
+}
+
+.station-picker-btn:hover, .station-picker-btn.active {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(123, 47, 252, 0.15)) !important;
+    border-color: rgba(0, 212, 255, 0.3) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    font-weight: 600 !important;
+    color: #fff !important;
+}
