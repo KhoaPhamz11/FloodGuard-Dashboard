@@ -62,7 +62,16 @@ function initLayout() {
     // Sidebar click handlers
     document.querySelectorAll(".sidebar-item").forEach(item => {
         item.addEventListener("click", () => {
+            if (item.id === "sidebarAlertBtn") return; // Bỏ qua nút cảnh báo vì nó xử lý riêng ở alerts.js
+
             const layerName = item.dataset.layer;
+
+            // Đóng Alert Center nếu đang mở
+            if (typeof closeAlertCenter === "function") {
+                closeAlertCenter();
+            }
+
+            if (!layerName) return;
 
             if (layerName === "reports-picker") {
                 openStationPicker("reports");
@@ -124,9 +133,9 @@ function openStationPicker(mode) {
     // Đổi tiêu đề modal cho rõ mục đích
     const titleEl = document.getElementById("pickerModalTitle");
     if (titleEl) {
-        titleEl.textContent = mode === "detail"
-            ? "<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> Chọn trạm để xem chi tiết"
-            : "<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Chọn trạm để xem báo cáo";
+        titleEl.innerHTML = mode === "detail"
+            ? `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> Chọn trạm để xem chi tiết`
+            : `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Chọn trạm để xem báo cáo`;
     }
 
     const modal = document.getElementById("stationPickerModal");
@@ -146,7 +155,7 @@ function generateStationPickerButtons() {
     STATION_LOCATIONS.forEach(loc => {
         const btn = document.createElement("button");
         btn.className = "station-picker-btn hover-motion-btn";
-        btn.innerHTML = `<span class="picker-icon hover-motion-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg></span>Trạm ${loc.district}`;
+        btn.innerHTML = `Trạm ${loc.district}`;
 
         btn.addEventListener("click", () => {
             closeStationPicker();
@@ -195,10 +204,10 @@ function renderStationDetail(stationId) {
 
     // Cập nhật header card phải
     const titleEl = document.getElementById("detail-title");
-    if (titleEl) titleEl.textContent = `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> ${displayName}`;
+    if (titleEl) titleEl.innerHTML = `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.82a10 10 0 0 1 14 0"></path><path d="M8.5 16.42a5 5 0 0 1 7 0"></path></svg> ${displayName}`;
 
     const coordsEl = document.getElementById("detail-coords");
-    if (coordsEl) coordsEl.textContent = `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${loc.lat}°N, ${loc.lng}°E — ${loc.street}, ${loc.district}`;
+    if (coordsEl) coordsEl.innerHTML = `<svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${loc.lat}°N, ${loc.lng}°E — ${loc.street}, ${loc.district}`;
 
     // Tạo 6 metric cards + 1 status card
     const grid = document.getElementById("detail-metrics-grid");
@@ -284,6 +293,12 @@ function updateStationDetail(latestData) {
     if (badge) {
         badge.textContent = statusLabels[status] || status;
         badge.className = `water-status-badge status-pill badge-${status.toLowerCase()}`;
+    }
+
+    // Cập nhật wave animation (Sóng nước)
+    const waterBox = document.querySelector(".water-box");
+    if (waterBox) {
+        waterBox.setAttribute("data-status", status);
     }
 
     // Text trên metrics card

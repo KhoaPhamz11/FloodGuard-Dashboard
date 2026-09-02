@@ -83,6 +83,7 @@ function closeAlertCenter() {
     const drawer = document.getElementById('alertCenterDrawer');
     if (drawer) {
         drawer.classList.remove('open');
+        drawer.classList.remove('fullscreen-mode');
         alertCenterOpen = false;
         updateSidebarActiveState();
     }

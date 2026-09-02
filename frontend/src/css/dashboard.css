@@ -25,27 +25,47 @@
     z-index: 1;
 }
 
+
 .btn-fullscreen {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: rgba(10, 14, 39, 0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px 20px;
-    margin: 0;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 47, 252, 0.1));
-    color: #00d4ff;
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 0 0 15px 15px;
+    z-index: 9999 !important; pointer-events: auto;
+    transition: background 0.2s, border-color 0.2s;
 }
 
-.btn-fullscreen:hover {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(123, 47, 252, 0.2));
+
+.tooltip { position: relative; }
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 110%;
+    right: 0;
+    background: rgba(10, 14, 39, 0.9);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    border: 1px solid rgba(255,255,255,0.1);
 }
+.tooltip:hover::after { opacity: 1; }
+
+
+
 
 /* --- Forecast Card (placeholder) --- */
 .forecast-card { display: flex; flex-direction: column; }
@@ -637,7 +657,7 @@
 .ai-content h4 {
     font-size: 12px;
     color: #8892b0;
-    margin-bottom: 12px;
+    margin-top: 12px;
     letter-spacing: 1px;
 }
 
@@ -839,7 +859,7 @@
 .nav-input-row {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
+    margin-top: 12px;
 }
 .nav-input-row:last-child {
     margin-bottom: 0;
@@ -916,7 +936,7 @@
 .nav-summary-metrics {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-top: 12px;
 }
 
 .nav-metric-label {
@@ -972,3 +992,58 @@
 .nav-submit-btn:active {
     transform: scale(0.95);
 }
+/* Liquid Wave Dynamic Colors */
+.water-box[data-status="SAFE"] .water-wave-1 { background: rgba(30, 100, 200, 0.15); }
+.water-box[data-status="SAFE"] .water-wave-2 { background: rgba(20, 80, 180, 0.12); }
+.water-box[data-status="SAFE"] .water-wave-3 { background: rgba(50, 150, 255, 0.10); }
+
+.water-box[data-status="ADVISORY"] .water-wave-1 { background: rgba(255, 180, 50, 0.15); }
+.water-box[data-status="ADVISORY"] .water-wave-2 { background: rgba(230, 150, 30, 0.12); }
+.water-box[data-status="ADVISORY"] .water-wave-3 { background: rgba(255, 200, 80, 0.10); }
+
+.water-box[data-status="WARNING"] .water-wave-1 { background: rgba(255, 120, 30, 0.15); }
+.water-box[data-status="WARNING"] .water-wave-2 { background: rgba(230, 90, 20, 0.12); }
+.water-box[data-status="WARNING"] .water-wave-3 { background: rgba(255, 150, 50, 0.10); }
+
+.water-box[data-status="CRITICAL"] .water-wave-1 { background: rgba(220, 50, 50, 0.20); }
+.water-box[data-status="CRITICAL"] .water-wave-2 { background: rgba(200, 30, 30, 0.15); }
+.water-box[data-status="CRITICAL"] .water-wave-3 { background: rgba(255, 70, 70, 0.12); }
+
+/* Radar Pulse Animation */
+.radar-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid #00ffff;
+    z-index: 0;
+    pointer-events: none;
+    animation: radar-pulse-anim 2s infinite ease-out;
+}
+.water-logo-mark {
+    position: relative; /* For radar pulse */
+}
+.water-logo-mark svg {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes radar-pulse-anim {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+    }
+}
+
+.water-box[data-status="CRITICAL"] .radar-pulse { border-color: #e53935; }
+.water-box[data-status="WARNING"] .radar-pulse { border-color: #f57c00; }
+.water-box[data-status="ADVISORY"] .radar-pulse { border-color: #fdd835; }
+.station-picker-btn { font-size: 1.25rem !important; font-weight: 700 !important; padding: 25px 15px !important; } 
