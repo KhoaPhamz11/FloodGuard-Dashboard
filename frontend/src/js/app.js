@@ -101,6 +101,11 @@ function updateDashboardUI(latestData) {
         updateFullAlertsList(latestData);
     }
 
+    // Module 5: Cập nhật dữ liệu ngập cho Navigation Mode
+    if (typeof updateNavigationFloodData === "function") {
+        updateNavigationFloodData(latestData);
+    }
+
     // Module 5: Cập nhật 3 biểu đồ realtime (Layer reports)
     if (typeof updateReportCharts === "function") {
         updateReportCharts(latestData);

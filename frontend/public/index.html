@@ -15,53 +15,63 @@
     <link rel="stylesheet" href="../src/css/motion.css">
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
+    <!-- Turf.js for Geospatial Analysis -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <!-- Apache ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 </head>
-<body>
+<body class="dark-theme">
     <div class="cinematic-noise"></div>
     <div class="app-wrapper">
 
         <!-- ===== SIDEBAR NAVIGATION ===== -->
-        <nav class="sidebar motion-fade-down motion-p1" id="sidebar">
+        <nav class="sidebar glass-panel motion-slide-right" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo hover-motion-icon">🌊</div>
                 <div class="sidebar-title">FloodGuard</div>
                 <div class="sidebar-subtitle">Hệ thống cảnh báo ngập AIoT</div>
             </div>
             <ul class="sidebar-menu">
-                <li class="sidebar-item active" data-layer="main">
-                    <span class="sidebar-icon">🏠</span>
-                    <span class="sidebar-text">Overview</span>
+                <li class="sidebar-item active hover-motion-icon" data-layer="main">
+                    <span class="icon">🏠</span>
+                    <span class="sidebar-text">Tổng quan</span>
                 </li>
-                <li class="sidebar-item" data-layer="fullmap">
-                    <span class="sidebar-icon">🗺️</span>
-                    <span class="sidebar-text">Live Map</span>
+                <li class="sidebar-item hover-motion-icon" data-layer="fullmap">
+                    <span class="icon">🗺️</span>
+                    <span class="sidebar-text">Bản đồ lớn</span>
                 </li>
-                <li class="sidebar-item" data-layer="stations-picker">
-                    <span class="sidebar-icon">📡</span>
-                    <span class="sidebar-text">Stations</span>
+                <!-- MỚI: TÍNH NĂNG CHỈ ĐƯỜNG TRÁNH NGẬP -->
+                <li class="sidebar-item hover-motion-icon" data-layer="navigation">
+                    <span class="icon">🧭</span>
+                    <span class="sidebar-text">Dẫn đường tránh ngập</span>
                 </li>
-                <li class="sidebar-item" data-layer="alerts">
-                    <span class="sidebar-icon">⚠️</span>
-                    <span class="sidebar-text">Alerts</span>
+                <li class="sidebar-item hover-motion-icon" data-layer="stations-picker">
+                    <span class="icon">📍</span>
+                    <span class="sidebar-text">Các trạm đo</span>
                 </li>
-                <li class="sidebar-item" data-layer="reports-picker">
-                    <span class="sidebar-icon">📊</span>
-                    <span class="sidebar-text">Analytics</span>
+                <li class="sidebar-item hover-motion-icon" data-layer="reports-picker">
+                    <span class="icon">📈</span>
+                    <span class="sidebar-text">Báo cáo</span>
+                </li>
+                <li class="sidebar-item hover-motion-icon" data-layer="settings">
+                    <span class="icon">⚙️</span>
+                    <span class="sidebar-text">Cài đặt</span>
                 </li>
             </ul>
             
-            <div class="sidebar-system-status">
-                <div class="sys-title">SYSTEM</div>
-                <div class="sys-item"><span class="status-dot green"></span> Online</div>
-                <div class="sys-item"><span class="status-dot green"></span> MQTT Connected</div>
-                <div class="sys-item"><span class="status-dot blue"></span> Sync: Live</div>
+            <div class="sidebar-system-status" style="margin-top:auto; padding:20px; font-size:12px; color:rgba(255,255,255,0.5);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <div class="status-dot green" style="width:8px; height:8px;"></div>
+                    <span>Sensor Network</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="status-dot green" style="width:8px; height:8px;"></div>
+                    <span>AI Engine</span>
+                </div>
             </div>
 
-            <!-- Nút quay lại -->
-            <div class="sidebar-back hover-motion-btn" id="backBtn" style="display: none;">
-                <span class="sidebar-icon hover-motion-icon">◀</span>
+            <div class="sidebar-bottom sidebar-item hover-motion-icon" data-layer="main" id="backBtn" style="display: none;">
+                <span class="icon">🚪</span>
                 <span class="sidebar-text">Quay lại</span>
             </div>
         </nav>
@@ -148,25 +158,65 @@
             <div class="layer-container" id="layer-fullmap">
                 <div class="card fullmap-card motion-fade-up motion-p2 liquid-glass">
                     <div class="card-header macos-frame">
-                        <h3>🗺️ Bản đồ ngập lụt TP. Hồ Chí Minh</h3>
+                        <h3>🗺️ Bản đồ ngập lụt toàn cảnh</h3>
                     </div>
-                    <div class="fullmap-container" id="fullscreen-map-container">
-                        <div id="fullscreen-map" class="map-motion-entrance"></div>
+                    <div class="map-container">
+                        <div id="fullscreen-map"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== LAYER 3: TẤT CẢ CẢNH BÁO ===== -->
-            <div class="layer-container" id="layer-alerts">
-                <div class="card alerts-full-card motion-fade-up motion-p2 liquid-glass">
-                    <div class="card-header">
-                        <h3>⚠️ Tất cả cảnh báo ngập</h3>
+            <!-- ===== MỚI: LAYER NAVIGATION (DẪN ĐƯỜNG TRÁNH NGẬP) ===== -->
+            <div class="layer-container" id="layer-navigation">
+                <div class="navigation-wrapper">
+                    
+                    <!-- Search Panel (Nổi phía trên map) -->
+                    <div class="navigation-search-panel liquid-glass motion-fade-down">
+                        <div class="nav-search-header">
+                            <h3>🧭 Flood-Aware Route</h3>
+                        </div>
+                        <div class="nav-inputs">
+                            <div class="nav-input-row">
+                                <span class="nav-icon start-icon">📍</span>
+                                <div class="nav-input-wrapper">
+                                    <input type="text" id="nav-start-input" class="nav-input" placeholder="Điểm xuất phát..." autocomplete="off">
+                                    <div class="nav-suggestions" id="nav-start-suggestions" style="display: none;"></div>
+                                </div>
+                            </div>
+                            <div class="nav-input-row">
+                                <span class="nav-icon end-icon">🏁</span>
+                                <div class="nav-input-wrapper" style="display: flex; gap: 8px;">
+                                    <input type="text" id="nav-end-input" class="nav-input" placeholder="Điểm đến..." autocomplete="off">
+                                    <button id="nav-submit-btn" class="nav-submit-btn" title="Tìm đường">➔</button>
+                                    <div class="nav-suggestions" id="nav-end-suggestions" style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="alerts-full-list motion-stagger-children" id="alerts-full-list"></div>
+
+                    <!-- Summary Panel (Nổi phía dưới hoặc gọn gàng) -->
+                    <div class="navigation-summary-panel liquid-glass motion-fade-up" id="nav-summary-panel" style="display: none;">
+                        <div class="nav-summary-metrics">
+                            <div class="nav-metric">
+                                <span class="nav-metric-label">Khoảng cách</span>
+                                <span class="nav-metric-value" id="nav-summary-dist">-- km</span>
+                            </div>
+                            <div class="nav-metric">
+                                <span class="nav-metric-label">Thời gian</span>
+                                <span class="nav-metric-value" id="nav-summary-time">-- phút</span>
+                            </div>
+                        </div>
+                        <div class="nav-summary-status" id="nav-summary-status">
+                            <span class="nav-status-icon">✓</span> Lộ trình an toàn
+                        </div>
+                    </div>
+
+                    <!-- Navigation Map Container -->
+                    <div id="navigation-map" class="navigation-map-container"></div>
                 </div>
             </div>
 
-            <!-- ===== LAYER: CHI TIẾT TRẠM (Kresna-inspired) ===== -->
+            <!-- ===== LAYER 3: CHI TIẾT 1 TRẠM ===== -->
             <div class="layer-container" id="layer-station-detail">
                 <div class="station-detail-wrapper motion-stagger-children">
                     <!-- Left: Water Animation Card -->
@@ -241,6 +291,7 @@
     <script src="../src/js/chart.js"></script>
     <script src="../src/js/notification.js"></script>
     <script src="../src/js/map.js"></script>
+    <script src="../src/js/navigation.js"></script>
     <script src="../src/js/layout.js"></script>
     <script src="../src/js/app.js"></script>
 </body>
