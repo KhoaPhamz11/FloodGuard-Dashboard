@@ -315,19 +315,19 @@
             <div class="alert-tab-content active" id="tab-active-alerts">
                 <!-- TỔNG QUAN (HORIZONTAL) -->
                 <div class="alert-summary-horizontal">
-                    <div class="summary-item critical">
+                    <div class="summary-item critical" onclick="setSeverityFilter('critical')">
                         <span class="count" id="count-critical">0</span>
                         <span class="label">NGHIÊM TRỌNG</span>
                     </div>
-                    <div class="summary-item warning">
+                    <div class="summary-item warning" onclick="setSeverityFilter('warning')">
                         <span class="count" id="count-warning">0</span>
                         <span class="label">CẢNH BÁO NẶNG</span>
                     </div>
-                    <div class="summary-item info">
+                    <div class="summary-item info" onclick="setSeverityFilter('info')">
                         <span class="count" id="count-info">0</span>
                         <span class="label">CẢNH BÁO NHẸ</span>
                     </div>
-                    <div class="summary-item safe">
+                    <div class="summary-item safe" onclick="setSeverityFilter('safe')">
                         <span class="count" id="count-safe">0</span>
                         <span class="label">AN TOÀN</span>
                     </div>

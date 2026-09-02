@@ -1,3 +1,22 @@
+
+window.currentSeverityFilter = 'all';
+window.setSeverityFilter = function(severity) {
+    if (window.currentSeverityFilter === severity) {
+        window.currentSeverityFilter = 'all'; // toggle off
+    } else {
+        window.currentSeverityFilter = severity;
+    }
+    
+    // Update active class
+    document.querySelectorAll('.summary-item').forEach(item => {
+        item.classList.remove('active');
+        if (window.currentSeverityFilter !== 'all' && item.classList.contains(severity)) {
+            item.classList.add('active');
+        }
+    });
+    
+    renderActiveAlerts();
+};
 // File: alerts.js — Trung tâm Cảnh báo (Alert Center) Logic
 
 let alertCenterOpen = false;
@@ -238,6 +257,12 @@ function renderActiveAlerts() {
         filtered = filtered.filter(a => a.type === currentFilterType);
     }
 
+    
+    // Severity Filter
+    if (window.currentSeverityFilter && window.currentSeverityFilter !== 'all') {
+        filtered = filtered.filter(a => a.severity === window.currentSeverityFilter);
+    }
+
     // Sort
     filtered.sort((a, b) => {
         if (currentSort === 'newest') return b.timestampValue - a.timestampValue;
@@ -332,6 +357,7 @@ function renderHistory() {
 
 function viewAlertOnMap(stationName) {
     closeAlertCenter();
+    if (typeof showLayer === "function") showLayer("main");
     // Tận dụng Map hiện tại để focus
     if (typeof mainMap !== "undefined" && typeof getStationNumericId === "function" && typeof getStationLocation === "function") {
         const latestD = window._latestAlertData;
