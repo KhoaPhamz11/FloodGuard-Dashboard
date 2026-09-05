@@ -243,16 +243,20 @@ async function renderAllChartsForStation(stationId) {
         nameEl.textContent = getStationDisplayName(stationId);
     }
 
+    const timeRangeSelect = document.getElementById("report-time-range");
+    const minutes = timeRangeSelect ? parseInt(timeRangeSelect.value) : 360;
+    const timeLabel = timeRangeSelect && timeRangeSelect.options.length > 0 ? timeRangeSelect.options[timeRangeSelect.selectedIndex].text : "6 giờ qua";
+
     const chartConfigs = [
         { title: "🌧️ Lượng mưa Realtime", type: "bar", field: "R", color: "#00d4ff", isHistory: false },
         { title: "🚰 Thoát nước Realtime", type: "line", field: "D", color: "#28a745", isHistory: false },
         { title: "🌊 Thủy triều Realtime", type: "line", field: "H_tide", color: "#7b2ffc", isHistory: false },
-        { title: "📊 Lượng mưa 6 tiếng", type: "bar", field: "R", color: "#ff9800", isHistory: true },
-        { title: "📈 Thủy triều 6 tiếng", type: "line", field: "H_tide", color: "#ff0040", isHistory: true }
+        { title: `📊 Lượng mưa (${timeLabel})`, type: "bar", field: "R", color: "#ff9800", isHistory: true },
+        { title: `📈 Thủy triều (${timeLabel})`, type: "line", field: "H_tide", color: "#ff0040", isHistory: true }
     ];
 
     let historyData = null;
-    try { historyData = await fetchHistoryData(); } catch (e) {}
+    try { historyData = await fetchHistoryData(minutes); } catch (e) {}
 
     const baseOpt = getCommonEchartsOptions();
     
@@ -335,3 +339,15 @@ function updateReportCharts(latestData) {
         });
     }
 }
+
+// Lắng nghe sự kiện thay đổi thời gian báo cáo
+document.addEventListener("DOMContentLoaded", () => {
+    const timeRangeSelect = document.getElementById("report-time-range");
+    if (timeRangeSelect) {
+        timeRangeSelect.addEventListener("change", () => {
+            if (currentReportStationId) {
+                renderAllChartsForStation(currentReportStationId);
+            }
+        });
+    }
+});
