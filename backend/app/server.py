@@ -40,10 +40,13 @@ collection = db["sensor_data"]
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 ORS_BASE_URL = "https://api.openrouteservice.org"
 
+from typing import Optional, Dict, Any
+
 # Schemas cho Navigation API
 class RouteRequest(BaseModel):
     start: list[float]  # [lng, lat]
     end: list[float]    # [lng, lat]
+    avoid_polygons: Optional[Dict[str, Any]] = None
 
 @app.get("/api/debug")
 def debug_env():
@@ -98,6 +101,11 @@ def get_driving_route(request: RouteRequest):
     body = {
         "coordinates": [request.start, request.end]
     }
+    
+    if request.avoid_polygons:
+        body["options"] = {
+            "avoid_polygons": request.avoid_polygons
+        }
     
     try:
         response = requests.post(url, json=body, headers=headers, timeout=10)
