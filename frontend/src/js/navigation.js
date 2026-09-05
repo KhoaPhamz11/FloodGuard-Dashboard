@@ -80,6 +80,25 @@ function initNavigationMap() {
             },
             'filter': ['==', 'risk', 'danger']
         });
+
+        // Source cho Alternative Safe Route
+        navMapInstance.addSource('nav-alt-route-source', {
+            'type': 'geojson',
+            'data': turf.featureCollection([])
+        });
+
+        // Layer màu XANH LÁ (An toàn thay thế)
+        navMapInstance.addLayer({
+            'id': 'nav-alt-route-layer',
+            'type': 'line',
+            'source': 'nav-alt-route-source',
+            'layout': { 'line-join': 'round', 'line-cap': 'round' },
+            'paint': {
+                'line-color': '#00E676',
+                'line-width': 6,
+                'line-dasharray': [2, 2]
+            }
+        });
         
         // Source & Layer cho Tên Đường (Labels) đã bị xóa để dùng HTML Markers hỗ trợ Tiếng Việt
         
@@ -120,7 +139,7 @@ window.updateNavigationFloodData = function(latestData) {
         const loc = STATION_LOCATIONS.find(l => l.id === parseInt(st.station_name.replace('station_','')));
         if (loc) {
             const point = turf.point([loc.lng, loc.lat]);
-            const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers' });
+            const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 16 });
             dangerFeatures.push(buffer);
         }
     });
@@ -201,12 +220,59 @@ function analyzeFloodRoute() {
     const statusEl = document.getElementById('nav-summary-status');
     if (hasDanger) {
         statusEl.className = 'nav-summary-status danger';
-        statusEl.innerHTML = '<span class="nav-status-icon">⚠️</span> Nguy cơ ngập trên tuyến';
+        statusEl.innerHTML = '<span class="nav-status-icon">⚠️</span> Nguy cơ ngập trên tuyến. Đang tìm đường vòng...';
+        fetchSafeAlternativeRoute();
     } else {
         statusEl.className = 'nav-summary-status safe';
         statusEl.innerHTML = '<span class="nav-status-icon">✓</span> Lộ trình an toàn';
+        if (navMapInstance.getSource('nav-alt-route-source')) {
+            navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
+        }
     }
     document.getElementById('nav-summary-panel').style.display = 'block';
+}
+
+async function fetchSafeAlternativeRoute() {
+    if (!currentStartCoords || !currentEndCoords || !currentDangerPolygons || currentDangerPolygons.features.length === 0) return;
+    
+    try {
+        const multiPolygonCoords = currentDangerPolygons.features.map(f => f.geometry.coordinates);
+        
+        const res = await fetch('/api/navigation/route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                start: currentStartCoords,
+                end: currentEndCoords,
+                avoid_polygons: {
+                    type: "MultiPolygon",
+                    coordinates: multiPolygonCoords
+                }
+            })
+        });
+        
+        if (!res.ok) throw new Error("Alternative routing failed");
+        
+        const data = await res.json();
+        const routeFeature = data.features[0];
+        
+        if (navMapInstance.getSource('nav-alt-route-source')) {
+            navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([routeFeature]));
+        }
+
+        const props = routeFeature.properties;
+        const distKm = (props.segments[0].distance / 1000).toFixed(1);
+        const timeMin = Math.round(props.segments[0].duration / 60);
+        
+        const statusEl = document.getElementById('nav-summary-status');
+        statusEl.innerHTML = `<span class="nav-status-icon">✓</span> Đã tìm thấy lộ trình vòng tránh ngập (${distKm}km, ${timeMin} phút)`;
+        statusEl.className = 'nav-summary-status safe';
+        
+    } catch (e) {
+        console.error("Lỗi lấy lộ trình thay thế:", e);
+        const statusEl = document.getElementById('nav-summary-status');
+        statusEl.innerHTML = '<span class="nav-status-icon">⚠️</span> Nguy cơ ngập. Không tìm thấy đường vòng an toàn!';
+    }
 }
 
 // 4. Gọi API Routing Backend
@@ -228,6 +294,11 @@ async function fetchRoute() {
         const data = await res.json();
         const routeFeature = data.features[0];
         currentRouteGeoJSON = routeFeature;
+        
+        // Xóa lộ trình thay thế cũ
+        if (navMapInstance.getSource('nav-alt-route-source')) {
+            navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
+        }
         
         // Trích xuất tên đường để làm sáng lên bằng HTML Markers (Hỗ trợ Tiếng Việt tốt nhất)
         if (typeof routeLabelMarkers === 'undefined') {
