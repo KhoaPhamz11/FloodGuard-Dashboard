@@ -11,9 +11,9 @@ async function fetchLatestData() {   // Hàm lấy dữ liệu mới nhất (Rea
     }
 }
 
-async function fetchHistoryData() { // Hàm lấy dữ liệu lịch sử 6 tiếng (Dùng khi người dùng chọn xem biểu đồ history)
+async function fetchHistoryData(minutes = 360) { // Hàm lấy dữ liệu lịch sử (Dùng khi người dùng chọn xem biểu đồ history)
     try {
-        const response = await fetch("/api/history"); // Gửi yêu cầu đến endpoint của Backend
+        const response = await fetch(`/api/history?minutes=${minutes}`); // Gửi yêu cầu đến endpoint của Backend
         const data = await response.json(); // Trích xuất cục JSON từ câu trả lời của Backend
         return data;
     } catch (error) {
