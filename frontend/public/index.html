@@ -278,6 +278,14 @@
                 <div class="card reports-card motion-fade-up motion-p2 liquid-glass">
                     <div class="card-header">
                         <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Báo cáo & Thống kê — <span id="reports-station-name">--</span></h3>
+                        <select id="report-time-range" class="alert-select" style="margin-left: auto;">
+                            <option value="60">1 giờ qua</option>
+                            <option value="180">3 giờ qua</option>
+                            <option value="360" selected>6 giờ qua</option>
+                            <option value="720">12 giờ qua</option>
+                            <option value="1440">24 giờ qua</option>
+                            <option value="4320">3 ngày qua</option>
+                        </select>
                     </div>
                     <div class="reports-grid motion-stagger-children" id="reports-grid"></div>
                 </div>
