@@ -134,13 +134,13 @@ def get_latest_data():
 
 
     """
-    API 2: Lấy dữ liệu lịch sử 6 tiếng (360 phút) để vẽ biểu đồ.
+    API 2: Lấy dữ liệu lịch sử tùy chỉnh theo thời gian (mặc định 6 tiếng = 360 phút).
     """
 @app.get("/api/history")
-def get_history_data():
+def get_history_data(minutes: int = 360):
    
-    # Lấy 360 document mới nhất, sắp xếp giảm dần
-    records = list(collection.find({}, sort=[("timestamp", -1)]).limit(360))  # lấy 360 document mới nhất, sắp xếp giảm dần theo timestamp. 
+    # Lấy `minutes` document mới nhất, sắp xếp giảm dần
+    records = list(collection.find({}, sort=[("timestamp", -1)]).limit(minutes))  # lấy `minutes` document mới nhất, sắp xếp giảm dần theo timestamp. 
       
     for r in records:   # Xử lý '_id' cho từng record trong danh sách
         r["_id"] = str(r["_id"])
