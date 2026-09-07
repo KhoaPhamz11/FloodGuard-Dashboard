@@ -107,10 +107,14 @@ function createMarkersForMap(map, markersObj, prefix) {
         el.innerHTML = `<div class="map-marker marker-safe" id="marker-${prefix}-${loc.id}"></div>`;
 
         const popupHTML = `
-            <div class="popup-station-name">${getStationDisplayName(loc.id)}</div>
+            <div class="popup-station-name">
+                ${getStationDisplayName(loc.id)}
+                <button class="popup-arrow-btn" onclick="goToStationDetail(${loc.id})" title="Xem chi tiết trạm">➔</button>
+            </div>
             <div class="popup-district">📍 ${loc.street}, ${loc.district}</div>
             <div class="popup-status status-pill status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
             <div style="margin-top:6px;">
+                <span>Cao độ nền: <b id="popup-zstreet-${prefix}-${loc.id}">--</b> m</span><br>
                 <span>Mực nước: <b id="popup-depth-${prefix}-${loc.id}">--</b> m</span><br>
                 <span>Risk Score: <b id="popup-risk-${prefix}-${loc.id}">--</b></span>
             </div>
@@ -154,6 +158,9 @@ function updateMapMarkers(stationsData) {
                 popupStatus.className = `popup-status status-pill status-${status.toLowerCase()}`;
                 popupStatus.textContent = statusLabels[status] || status;
             }
+            
+            const popupZStreet = document.getElementById(`popup-zstreet-${prefix}-${id}`);
+            if (popupZStreet && station.Z_street !== undefined) popupZStreet.textContent = Number(station.Z_street).toFixed(2);
             
             const popupDepth = document.getElementById(`popup-depth-${prefix}-${id}`);
             if (popupDepth) popupDepth.textContent = Number(station.H).toFixed(2);
