@@ -6,6 +6,14 @@ let currentLayer = "main";
 let stationPickerMode = "reports";   // "reports" hoặc "detail"
 let currentDetailStationId = null;   // Trạm đang được xem chi tiết
 
+window.goToStationDetail = function(stationId) {
+    if (typeof renderStationDetail === 'function' && typeof showLayer === 'function') {
+        currentDetailStationId = stationId;
+        renderStationDetail(stationId);
+        showLayer("station-detail");
+    }
+};
+
 // ===== CHUYỂN LAYER =====
 function showLayer(layerName) {
     // 1. Ẩn tất cả layers
