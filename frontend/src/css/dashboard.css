@@ -1113,3 +1113,45 @@
     font-weight: 600 !important;
     color: #fff !important;
 }
+
+.station-picker-btn.status-safe-bg {
+    background: rgba(40, 167, 69, 0.15) !important;
+    border-color: rgba(40, 167, 69, 0.4) !important;
+    color: #4cdf78 !important;
+}
+.station-picker-btn.status-advisory-bg {
+    background: rgba(23, 162, 184, 0.15) !important;
+    border-color: rgba(23, 162, 184, 0.4) !important;
+    color: #5cd6eb !important;
+}
+.station-picker-btn.status-warning-bg {
+    background: rgba(255, 152, 0, 0.15) !important;
+    border-color: rgba(255, 152, 0, 0.4) !important;
+    color: #ffb74d !important;
+}
+.station-picker-btn.status-critical-bg {
+    background: rgba(229, 57, 53, 0.2) !important;
+    border-color: rgba(229, 57, 53, 0.5) !important;
+    color: #ff6659 !important;
+}
+
+.btn-return-map {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 212, 255, 0.15);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    color: #00d4ff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+.btn-return-map:hover {
+    background: rgba(0, 212, 255, 0.3);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
