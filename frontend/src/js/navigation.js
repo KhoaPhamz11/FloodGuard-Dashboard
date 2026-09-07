@@ -95,8 +95,7 @@ function initNavigationMap() {
             'layout': { 'line-join': 'round', 'line-cap': 'round' },
             'paint': {
                 'line-color': '#00E676',
-                'line-width': 6,
-                'line-dasharray': [2, 2]
+                'line-width': 6
             }
         });
         
@@ -260,6 +259,8 @@ async function fetchSafeAlternativeRoute() {
             navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([routeFeature]));
         }
 
+        renderRouteLabels(routeFeature);
+
         const props = routeFeature.properties;
         const distKm = (props.segments[0].distance / 1000).toFixed(1);
         const timeMin = Math.round(props.segments[0].duration / 60);
@@ -300,71 +301,7 @@ async function fetchRoute() {
             navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
         }
         
-        // Trích xuất tên đường để làm sáng lên bằng HTML Markers (Hỗ trợ Tiếng Việt tốt nhất)
-        if (typeof routeLabelMarkers === 'undefined') {
-            window.routeLabelMarkers = [];
-        }
-        // Xóa các marker cũ
-        window.routeLabelMarkers.forEach(m => m.remove());
-        window.routeLabelMarkers = [];
-
-        const steps = routeFeature.properties.segments[0].steps;
-        const coords = routeFeature.geometry.coordinates;
-        
-        if (steps) {
-            steps.forEach(step => {
-                if (step.name && step.name !== '-' && step.way_points) {
-                    const startIdx = step.way_points[0];
-                    const endIdx = step.way_points[1];
-                    const stepCoords = coords.slice(startIdx, endIdx + 1);
-                    
-                    if (stepCoords.length > 1) {
-                        const line = turf.lineString(stepCoords);
-                        const length = turf.length(line);
-                        
-                        // Lấy điểm giữa đoạn
-                        const midPoint = turf.along(line, length / 2).geometry.coordinates;
-                        
-                        // Tính góc nghiêng
-                        let bearing = 0;
-                        if (length > 0.01) {
-                            const p1 = turf.along(line, Math.max(0, (length / 2) - 0.005)).geometry.coordinates;
-                            const p2 = turf.along(line, Math.min(length, (length / 2) + 0.005)).geometry.coordinates;
-                            bearing = turf.bearing(turf.point(p1), turf.point(p2));
-                        }
-                        
-                        // Xoay sao cho chữ đọc xuôi
-                        let rotation = bearing - 90;
-                        if (rotation > 90 || rotation < -90) {
-                            rotation += 180;
-                        }
-
-                        // Tạo DOM Element
-                        const el = document.createElement('div');
-                        el.innerText = step.name;
-                        el.style.color = '#ffffff';
-                        el.style.fontSize = '12px';
-                        el.style.fontWeight = 'bold';
-                        el.style.textShadow = '0px 0px 4px #000000, 0px 0px 4px #000000, 0px 0px 4px #000000'; // Hiệu ứng sáng nổi bật
-                        el.style.pointerEvents = 'none'; // Không cản trở click map
-                        el.style.whiteSpace = 'nowrap';
-                        el.style.transform = `translate(-50%, -50%)`;
-
-                        // Thêm Marker
-                        const marker = new maplibregl.Marker({
-                            element: el,
-                            rotation: rotation,
-                            rotationAlignment: 'map',
-                            pitchAlignment: 'map'
-                        })
-                        .setLngLat(midPoint)
-                        .addTo(navMapInstance);
-                        
-                        window.routeLabelMarkers.push(marker);
-                    }
-                }
-            });
-        }
+        renderRouteLabels(routeFeature);
 
         // Cập nhật Metrics
         const props = routeFeature.properties;
@@ -387,6 +324,69 @@ async function fetchRoute() {
         
     } catch (e) {
         console.error("Lỗi lấy lộ trình:", e);
+    }
+}
+
+// Hàm render tên đường dùng chung
+function renderRouteLabels(routeFeature) {
+    if (typeof routeLabelMarkers === 'undefined') {
+        window.routeLabelMarkers = [];
+    }
+    // Xóa các marker cũ
+    window.routeLabelMarkers.forEach(m => m.remove());
+    window.routeLabelMarkers = [];
+
+    const steps = routeFeature.properties.segments[0].steps;
+    const coords = routeFeature.geometry.coordinates;
+    
+    if (steps) {
+        steps.forEach(step => {
+            if (step.name && step.name !== '-' && step.way_points) {
+                const startIdx = step.way_points[0];
+                const endIdx = step.way_points[1];
+                const stepCoords = coords.slice(startIdx, endIdx + 1);
+                
+                if (stepCoords.length > 1) {
+                    const line = turf.lineString(stepCoords);
+                    const length = turf.length(line);
+                    
+                    const midPoint = turf.along(line, length / 2).geometry.coordinates;
+                    
+                    let bearing = 0;
+                    if (length > 0.01) {
+                        const p1 = turf.along(line, Math.max(0, (length / 2) - 0.005)).geometry.coordinates;
+                        const p2 = turf.along(line, Math.min(length, (length / 2) + 0.005)).geometry.coordinates;
+                        bearing = turf.bearing(turf.point(p1), turf.point(p2));
+                    }
+                    
+                    let rotation = bearing - 90;
+                    if (rotation > 90 || rotation < -90) {
+                        rotation += 180;
+                    }
+
+                    const el = document.createElement('div');
+                    el.innerText = step.name;
+                    el.style.color = '#ffffff';
+                    el.style.fontSize = '12px';
+                    el.style.fontWeight = 'bold';
+                    el.style.textShadow = '0px 0px 4px #000000, 0px 0px 4px #000000, 0px 0px 4px #000000';
+                    el.style.pointerEvents = 'none';
+                    el.style.whiteSpace = 'nowrap';
+                    el.style.transform = `translate(-50%, -50%)`;
+
+                    const marker = new maplibregl.Marker({
+                        element: el,
+                        rotation: rotation,
+                        rotationAlignment: 'map',
+                        pitchAlignment: 'map'
+                    })
+                    .setLngLat(midPoint)
+                    .addTo(navMapInstance);
+                    
+                    window.routeLabelMarkers.push(marker);
+                }
+            }
+        });
     }
 }
 
