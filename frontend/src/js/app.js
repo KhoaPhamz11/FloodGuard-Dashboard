@@ -116,6 +116,11 @@ function updateDashboardUI(latestData) {
         updateStationDetail(latestData);
     }
 
+    // Module 6b: Cập nhật màu nút chọn trạm trong Modal
+    if (typeof updateStationPickerButtons === "function") {
+        updateStationPickerButtons(latestData.stations_data);
+    }
+
     // Module 7: Cập nhật biểu đồ chính (Layer 1)
     if (typeof updateRealtimeChart === "function") {
         updateRealtimeChart(latestData);
