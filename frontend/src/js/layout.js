@@ -163,6 +163,7 @@ function generateStationPickerButtons() {
     STATION_LOCATIONS.forEach(loc => {
         const btn = document.createElement("button");
         btn.className = "station-picker-btn hover-motion-btn";
+        btn.id = `picker-btn-${loc.id}`;
         btn.innerHTML = `Trạm ${loc.district}`;
 
         btn.addEventListener("click", () => {
@@ -186,6 +187,39 @@ function generateStationPickerButtons() {
         });
 
         container.appendChild(btn);
+    });
+}
+
+// ===== CẬP NHẬT MÀU SẮC NÚT TRẠM TRONG MODAL =====
+function updateStationPickerButtons(stationsData) {
+    if (!stationsData) return;
+    
+    stationsData.forEach(station => {
+        const id = typeof getStationNumericId === "function" ? getStationNumericId(station) : null;
+        if (!id) return;
+        
+        const btn = document.getElementById(`picker-btn-${id}`);
+        if (!btn) return;
+        
+        const status = typeof getStatusFromCode === "function" ? getStatusFromCode(station.code) : "SAFE";
+        
+        if (status === "SAFE") {
+            btn.style.setProperty("background", "rgba(40, 167, 69, 0.15)", "important");
+            btn.style.setProperty("border-color", "rgba(40, 167, 69, 0.4)", "important");
+            btn.style.setProperty("color", "#4cdf78", "important");
+        } else if (status === "ADVISORY") {
+            btn.style.setProperty("background", "rgba(23, 162, 184, 0.15)", "important");
+            btn.style.setProperty("border-color", "rgba(23, 162, 184, 0.4)", "important");
+            btn.style.setProperty("color", "#5cd6eb", "important");
+        } else if (status === "WARNING") {
+            btn.style.setProperty("background", "rgba(255, 152, 0, 0.15)", "important");
+            btn.style.setProperty("border-color", "rgba(255, 152, 0, 0.4)", "important");
+            btn.style.setProperty("color", "#ffb74d", "important");
+        } else if (status === "CRITICAL") {
+            btn.style.setProperty("background", "rgba(229, 57, 53, 0.2)", "important");
+            btn.style.setProperty("border-color", "rgba(229, 57, 53, 0.5)", "important");
+            btn.style.setProperty("color", "#ff6659", "important");
+        }
     });
 }
 
