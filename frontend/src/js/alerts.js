@@ -298,7 +298,7 @@ function renderActiveAlerts() {
                     <div class="ac-level">${alert.title}</div>
                     <div class="ac-title">Trạm: ${districtName}</div>
                     <div class="ac-summary-grid">
-                        <div>Mực nước: ${alert.waterLevel} m</div>
+                        <div>Mực nước: ${alert.waterLevel} cm</div>
                         
                     </div>
                 </div>
