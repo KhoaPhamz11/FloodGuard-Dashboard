@@ -47,8 +47,8 @@ function createStationCards() {
 
         card.innerHTML = `
             <div class="station-name">${displayName}</div>
-            <div class="station-depth">Độ sâu: <span id="depth-val-${i}">--</span> m</div>
-            <div class="station-rate">Tốc độ dâng: <span id="rate-val-${i}">--</span> m/phút</div>
+            <div class="station-depth">Độ sâu: <span id="depth-val-${i}">--</span> cm</div>
+            <div class="station-rate">Tốc độ dâng: <span id="rate-val-${i}">--</span> cm/phút</div>
             <div class="station-risk" id="risk-val-${i}">--</div>
             <div class="station-status-text">Đang chờ dữ liệu...</div>
         `;
