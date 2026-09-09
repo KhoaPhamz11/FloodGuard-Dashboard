@@ -257,10 +257,10 @@ function renderStationDetail(stationId) {
     grid.innerHTML = "";
 
     const metrics = [
-        { icon: "💧", label: "Mực nước ngập",  id: "detail-h",     unit: "m" },
-        { icon: "⬆️", label: "Tốc độ dâng",   id: "detail-v",     unit: "m/phút" },
+        { icon: "💧", label: "Mực nước ngập",  id: "detail-h",     unit: "cm" },
+        { icon: "⬆️", label: "Tốc độ dâng",   id: "detail-v",     unit: "cm/phút" },
         { icon: "🌧️", label: "Lượng mưa",     id: "detail-r",     unit: "mm/phút" },
-        { icon: "🌊", label: "Thủy triều",    id: "detail-htide", unit: "m" },
+        { icon: "🌊", label: "Thủy triều",    id: "detail-htide", unit: "cm" },
         { icon: "🚰", label: "Thoát nước",    id: "detail-d",     unit: "mm/phút" },
         { icon: "⚡", label: "Risk Score",    id: "detail-risk",  unit: "" }
     ];
