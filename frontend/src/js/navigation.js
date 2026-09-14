@@ -163,7 +163,7 @@ window.updateNavigationFloodData = function(latestData) {
             const loc = STATION_LOCATIONS.find(l => l.id === parseInt(st.station_name.replace('station_','')));
             if (loc) {
                 const point = turf.point([loc.lng, loc.lat]);
-                const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 32 });
+                const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 16 });
                 // Gán thuộc tính để biết mức độ nghiêm trọng
                 buffer.properties = { status: status, riskLevel: st.code }; 
                 dangerFeatures.push(buffer);
@@ -182,7 +182,7 @@ window.updateNavigationFloodData = function(latestData) {
 
 // 3. Phân tích Route cắt qua Danger Zones
 function analyzeFloodRoute() {
-    if (!currentRouteGeoJSON || !currentDangerPolygons) return;
+    if (!currentRouteGeoJSON) return;
 
     let segments = [];
     const routeCoords = currentRouteGeoJSON.geometry.coordinates;
@@ -191,7 +191,7 @@ function analyzeFloodRoute() {
     const routeLine = turf.lineString(routeCoords);
     
     // Nếu không có vùng nguy hiểm nào, toàn bộ là an toàn
-    if (currentDangerPolygons.features.length === 0) {
+    if (!currentDangerPolygons || currentDangerPolygons.features.length === 0) {
         segments.push(turf.feature(routeLine.geometry, { risk: 'safe' }));
     } else {
         // Logic cắt đoạn: Thay vì cắt phức tạp, chúng ta sẽ chia LineString thành các đoạn nhỏ giữa từng điểm toạ độ
@@ -277,7 +277,11 @@ async function fetchSafeAlternativeRoute() {
     if (!currentStartCoords || !currentEndCoords || !currentDangerPolygons || currentDangerPolygons.features.length === 0) return;
     
     try {
-        const multiPolygonCoords = currentDangerPolygons.features.map(f => f.geometry.coordinates);
+        // Chỉ tránh các khu vực CRITICAL (code >= 3)
+        const criticalPolygons = currentDangerPolygons.features.filter(f => f.properties.riskLevel >= 3 || f.properties.status === 'CRITICAL');
+        if (criticalPolygons.length === 0) return;
+        
+        const multiPolygonCoords = criticalPolygons.map(f => f.geometry.coordinates);
         
         const res = await fetch('/api/navigation/route', {
             method: 'POST',
@@ -366,6 +370,12 @@ async function fetchRoute() {
         
     } catch (e) {
         console.error("Lỗi lấy lộ trình:", e);
+        const statusEl = document.getElementById('nav-summary-status');
+        if (statusEl) {
+            statusEl.className = 'nav-summary-status danger';
+            statusEl.innerHTML = '<span class="nav-status-icon" style="color:#e53935;">⚠️</span> Lỗi lấy lộ trình! Vui lòng kiểm tra lại ORS_API_KEY hoặc thử lại sau.';
+            document.getElementById('nav-summary-panel').style.display = 'block';
+        }
     }
 }
 
