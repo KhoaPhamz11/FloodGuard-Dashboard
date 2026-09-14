@@ -65,6 +65,10 @@ function initMaps() {
 
     mainMap.addControl(new maplibregl.NavigationControl(), 'top-right');
     createMarkersForMap(mainMap, mainMarkers, "main");
+    
+    mainMap.on('load', () => {
+        createRadarLayersForMap(mainMap);
+    });
 
     // Xử lý layout
     setTimeout(() => {
@@ -90,11 +94,32 @@ function initFullscreenMap() {
 
         fullscreenMap.addControl(new maplibregl.NavigationControl(), 'top-right');
         createMarkersForMap(fullscreenMap, fullscreenMarkers, "full");
+        
+        fullscreenMap.on('load', () => {
+            createRadarLayersForMap(fullscreenMap);
+        });
     }
 
     setTimeout(() => {
         if (fullscreenMap) fullscreenMap.resize();
     }, 250);
+}
+
+// ===== TẠO RADAR LAYERS =====
+// ===== KHỞI TẠO MARKERS & RADAR SCALE =====
+function getRadarRadiusPx(zoom) {
+    // 1 pixel ở vĩ độ 10.82 (HCM) = 153725 / 2^zoom (mét)
+    const metersPerPixel = 153725 / Math.pow(2, zoom);
+    return (1000 / metersPerPixel) + "px"; // 1000m = 1km
+}
+
+function updateMarkersZoom(map, markersObj) {
+    if (!map || !markersObj) return;
+    const radiusPx = getRadarRadiusPx(map.getZoom());
+    Object.values(markersObj).forEach(marker => {
+        const el = marker.getElement();
+        if (el) el.style.setProperty('--radar-radius', radiusPx);
+    });
 }
 
 // ===== TẠO MARKERS =====
@@ -129,6 +154,10 @@ function createMarkersForMap(map, markersObj, prefix) {
 
         markersObj[loc.id] = marker;
     });
+    
+    // Lắng nghe sự kiện zoom để cập nhật CSS radar-radius (1km)
+    map.on('zoom', () => updateMarkersZoom(map, markersObj));
+    updateMarkersZoom(map, markersObj);
 }
 
 // ===== CẬP NHẬT MÀU MARKER THEO STATUS =====
