@@ -125,13 +125,13 @@
 
 /* Colors for levels */
 .critical .count, .critical-text { color: #d32f2f; } /* Slightly muted red */
-.warning .count, .warning-text { color: #e67e22; } /* Slightly muted orange */
-.info .count, .info-text { color: #0288d1; } /* Slightly muted blue */
+.warning .count, .warning-text { color: #ef6c00; } /* Dark orange */
+.info .count, .info-text { color: #fbc02d; } /* Yellow */
 .safe .count, .safe-text { color: #388e3c; } /* Slightly muted green */
 
 .summary-item.critical { border-top: 2px solid #d32f2f; }
-.summary-item.warning { border-top: 2px solid #e67e22; }
-.summary-item.info { border-top: 2px solid #0288d1; }
+.summary-item.warning { border-top: 2px solid #ef6c00; }
+.summary-item.info { border-top: 2px solid #fbc02d; }
 .summary-item.safe { border-top: 2px solid #388e3c; }
 
 
@@ -197,8 +197,8 @@
 .alert-card:hover { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08); }
 
 .alert-card.critical { border-left: 2px solid #d32f2f; }
-.alert-card.warning { border-left: 2px solid #e67e22; }
-.alert-card.info { border-left: 2px solid #0288d1; }
+.alert-card.warning { border-left: 2px solid #ef6c00; }
+.alert-card.info { border-left: 2px solid #fbc02d; }
 .alert-card.safe { border-left: 2px solid #388e3c; }
 
 /* Subdued pulse for critical */
@@ -416,8 +416,8 @@
 .nav-icon svg { width: 18px; height: 18px; color: rgba(255,255,255,0.7); vertical-align: middle; }
 
 .alert-card.critical .ac-level { color: #d32f2f; }
-.alert-card.warning .ac-level { color: #e67e22; }
-.alert-card.info .ac-level { color: #0288d1; }
+.alert-card.warning .ac-level { color: #ef6c00; }
+.alert-card.info .ac-level { color: #fbc02d; }
 .alert-card.safe .ac-level { color: #388e3c; }
 
 .summary-item {
@@ -441,6 +441,6 @@
 }
 
 .summary-item.critical.active { box-shadow: 0 0 15px rgba(211, 47, 47, 0.4) inset; border-color: rgba(211, 47, 47, 0.8); }
-.summary-item.warning.active { box-shadow: 0 0 15px rgba(230, 126, 34, 0.4) inset; border-color: rgba(230, 126, 34, 0.8); }
-.summary-item.info.active { box-shadow: 0 0 15px rgba(2, 136, 209, 0.4) inset; border-color: rgba(2, 136, 209, 0.8); }
+.summary-item.warning.active { box-shadow: 0 0 15px rgba(239, 108, 0, 0.4) inset; border-color: rgba(239, 108, 0, 0.8); }
+.summary-item.info.active { box-shadow: 0 0 15px rgba(251, 192, 45, 0.4) inset; border-color: rgba(251, 192, 45, 0.8); }
 .summary-item.safe.active { box-shadow: 0 0 15px rgba(56, 142, 60, 0.4) inset; border-color: rgba(56, 142, 60, 0.8); }
