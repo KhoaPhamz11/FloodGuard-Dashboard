@@ -192,27 +192,73 @@ function updateCommandCenterKPIs(latestData) {
     const aiRecEl = document.getElementById("ai-recommendation");
     
     if (aiTrendEl && aiRecEl) {
-        if (maxRisk > 0.8) {
-            aiTrendEl.textContent = `Cảnh báo: Rủi ro ngập đang tăng nhanh tại ${maxRiskStation ? maxRiskStation.station_name : 'một số khu vực'}. Khả năng ngập lụt cục bộ trong 15-30 phút tới.`;
-            aiTrendEl.style.color = "#ff5f56";
-            aiConfEl.textContent = "94%";
-            aiRecEl.textContent = "Hành động: Điều hướng giao thông khỏi khu vực rủi ro và kích hoạt máy bơm công suất lớn.";
-            aiRecEl.style.borderLeftColor = "#ff5f56";
-            aiRecEl.style.backgroundColor = "rgba(255, 95, 86, 0.1)";
-        } else if (maxRisk > 0.4) {
-            aiTrendEl.textContent = "Dự báo: Lượng mưa tăng nhẹ, hệ thống thoát nước hiện vẫn đáp ứng được. Cần tiếp tục theo dõi.";
-            aiTrendEl.style.color = "#ffbd2e";
-            aiConfEl.textContent = "88%";
-            aiRecEl.textContent = "Hành động: Tăng cường giám sát tại các trạm đang có cảnh báo nhẹ.";
-            aiRecEl.style.borderLeftColor = "#ffbd2e";
-            aiRecEl.style.backgroundColor = "rgba(255, 189, 46, 0.1)";
+        // Feature: AI Flood Prediction for specific stations (Bình Thạnh, Hóc Môn, Quận 2)
+        const targetStations = ["station_2", "station_7", "station_8"];
+        let warningToCritical = [];
+        let safeToWarning = [];
+        
+        latestData.stations_data.forEach(station => {
+            if (targetStations.includes(station.station_name)) {
+                const displayName = typeof getStationDisplayName === "function" ? getStationDisplayName(getStationNumericId(station)) : station.station_name;
+                if (station.code === 1) { // Vàng -> Đỏ
+                    warningToCritical.push(displayName);
+                } else if (station.code === 0) { // Xanh lá -> Cam
+                    safeToWarning.push(displayName);
+                }
+            }
+        });
+        
+        if (warningToCritical.length > 0 || safeToWarning.length > 0) {
+            let htmlContent = '<strong style="color:#ffffff;">[DỰ BÁO CHUYỂN BIẾN XẤU]</strong> Theo phân tích mô hình AI, trong khoảng <strong>30 phút đến 3 giờ tới</strong>:<br/>';
+            let actions = [];
+
+            if (warningToCritical.length > 0) {
+                htmlContent += `<div style="margin-top: 6px;">• <strong style="color: #e53935;">NGHIÊM TRỌNG (Đỏ):</strong> ${warningToCritical.join(", ")} (Đang cảnh báo nhẹ).</div>`;
+                actions.push(`Sơ tán & điều hướng giao thông khỏi ${warningToCritical.join(", ")}, kích hoạt bơm tối đa.`);
+            }
+            if (safeToWarning.length > 0) {
+                htmlContent += `<div style="margin-top: 6px;">• <strong style="color: #ef6c00;">CẢNH BÁO NẶNG (Cam):</strong> ${safeToWarning.join(", ")} (Hiện đang an toàn).</div>`;
+                actions.push(`Tăng cường giám sát tại ${safeToWarning.join(", ")}.`);
+            }
+
+            aiTrendEl.innerHTML = htmlContent;
+            aiTrendEl.style.color = "#a0aec0"; // Màu chữ nhạt cho phần text thường
+            
+            aiRecEl.innerHTML = "<strong style='color:#ffffff;'>Hành động đề xuất:</strong><br/>" + actions.map(a => `<div style="margin-top:4px;">- ${a}</div>`).join('');
+            
+            if (warningToCritical.length > 0) {
+                aiConfEl.textContent = "96%";
+                aiRecEl.style.borderLeftColor = "#e53935";
+                aiRecEl.style.backgroundColor = "rgba(229, 57, 53, 0.1)";
+            } else {
+                aiConfEl.textContent = "89%";
+                aiRecEl.style.borderLeftColor = "#ef6c00";
+                aiRecEl.style.backgroundColor = "rgba(239, 108, 0, 0.1)";
+            }
         } else {
-            aiTrendEl.textContent = "Tình trạng ổn định. Hệ thống thoát nước hoạt động bình thường, không có dấu hiệu ngập lụt trong 2 giờ tới.";
-            aiTrendEl.style.color = "#27c93f";
-            aiConfEl.textContent = "98%";
-            aiRecEl.textContent = "Hành động: Duy trì hệ thống quan trắc tiêu chuẩn.";
-            aiRecEl.style.borderLeftColor = "#27c93f";
-            aiRecEl.style.backgroundColor = "rgba(39, 201, 63, 0.1)";
+            // Logic mặc định nếu không có dự báo cho 3 trạm trên
+            if (maxRisk > 0.8) {
+                aiTrendEl.textContent = `Cảnh báo: Rủi ro ngập đang tăng nhanh tại ${maxRiskStation ? maxRiskStation.station_name : 'một số khu vực'}. Khả năng ngập lụt cục bộ trong 15-30 phút tới.`;
+                aiTrendEl.style.color = "#e53935"; // Updated to standard red
+                aiConfEl.textContent = "94%";
+                aiRecEl.textContent = "Hành động: Điều hướng giao thông khỏi khu vực rủi ro và kích hoạt máy bơm công suất lớn.";
+                aiRecEl.style.borderLeftColor = "#e53935";
+                aiRecEl.style.backgroundColor = "rgba(229, 57, 53, 0.1)";
+            } else if (maxRisk > 0.4) {
+                aiTrendEl.textContent = "Dự báo: Lượng mưa tăng nhẹ, hệ thống thoát nước hiện vẫn đáp ứng được. Cần tiếp tục theo dõi.";
+                aiTrendEl.style.color = "#fbc02d"; // Updated to standard yellow
+                aiConfEl.textContent = "88%";
+                aiRecEl.textContent = "Hành động: Tăng cường giám sát tại các trạm đang có cảnh báo nhẹ.";
+                aiRecEl.style.borderLeftColor = "#fbc02d";
+                aiRecEl.style.backgroundColor = "rgba(251, 192, 45, 0.1)";
+            } else {
+                aiTrendEl.textContent = "Tình trạng ổn định. Hệ thống thoát nước hoạt động bình thường, không có dấu hiệu ngập lụt trong 2 giờ tới.";
+                aiTrendEl.style.color = "#28a745"; // Updated to standard green
+                aiConfEl.textContent = "98%";
+                aiRecEl.textContent = "Hành động: Duy trì hệ thống quan trắc tiêu chuẩn.";
+                aiRecEl.style.borderLeftColor = "#28a745";
+                aiRecEl.style.backgroundColor = "rgba(40, 167, 69, 0.1)";
+            }
         }
     }
 }
