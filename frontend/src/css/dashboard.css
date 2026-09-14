@@ -226,22 +226,22 @@
 
 @keyframes marker-pulse-safe {
     0%   { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-    70%  { box-shadow: 0 0 0 15px rgba(40, 167, 69, 0); }
+    70%  { box-shadow: 0 0 0 var(--radar-radius, 15px) rgba(40, 167, 69, 0); }
     100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
 }
 @keyframes marker-pulse-advisory {
-    0%   { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.7); }
-    70%  { box-shadow: 0 0 0 15px rgba(23, 162, 184, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(251, 192, 45, 0.7); }
+    70%  { box-shadow: 0 0 0 var(--radar-radius, 15px) rgba(251, 192, 45, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(251, 192, 45, 0); }
 }
 @keyframes marker-pulse-warning {
-    0%   { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
-    70%  { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(239, 108, 0, 0.7); }
+    70%  { box-shadow: 0 0 0 var(--radar-radius, 15px) rgba(239, 108, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 108, 0, 0); }
 }
 @keyframes marker-pulse-critical {
     0%   { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); }
-    70%  { box-shadow: 0 0 0 15px rgba(229, 57, 53, 0); }
+    70%  { box-shadow: 0 0 0 var(--radar-radius, 15px) rgba(229, 57, 53, 0); }
     100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); }
 }
 
