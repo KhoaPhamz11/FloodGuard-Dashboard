@@ -7,7 +7,7 @@ let currentRouteGeoJSON = null;
 let currentDangerPolygons = null;
 let lastKnownFloodData = null;
 
-const FLOOD_ALERT_RADIUS_KM = 2; // Bán kính cảnh báo 2km
+const FLOOD_ALERT_RADIUS_KM = 1; // Bán kính cảnh báo 1km
 const NAV_MAP_STYLE = {
     "version": 8,
     "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
@@ -68,6 +68,32 @@ function initNavigationMap() {
             'filter': ['==', 'risk', 'safe']
         });
 
+        // Layer màu VÀNG (Advisory)
+        navMapInstance.addLayer({
+            'id': 'nav-route-advisory-layer',
+            'type': 'line',
+            'source': 'nav-route-source',
+            'layout': { 'line-join': 'round', 'line-cap': 'round' },
+            'paint': {
+                'line-color': '#fbc02d',
+                'line-width': 6
+            },
+            'filter': ['==', 'risk', 'ADVISORY']
+        });
+
+        // Layer màu CAM (Warning)
+        navMapInstance.addLayer({
+            'id': 'nav-route-warning-layer',
+            'type': 'line',
+            'source': 'nav-route-source',
+            'layout': { 'line-join': 'round', 'line-cap': 'round' },
+            'paint': {
+                'line-color': '#ef6c00',
+                'line-width': 6
+            },
+            'filter': ['==', 'risk', 'WARNING']
+        });
+
         // Layer màu ĐỎ (Nguy hiểm)
         navMapInstance.addLayer({
             'id': 'nav-route-danger-layer',
@@ -78,7 +104,7 @@ function initNavigationMap() {
                 'line-color': '#e53935',
                 'line-width': 6
             },
-            'filter': ['==', 'risk', 'danger']
+            'filter': ['==', 'risk', 'CRITICAL']
         });
 
         // Source cho Alternative Safe Route
@@ -126,20 +152,22 @@ window.updateNavigationFloodData = function(latestData) {
     const isNavLayerActive = document.getElementById('layer-navigation').classList.contains('layer-active');
     if (!isNavLayerActive || !navMapInstance || !navMapInstance.loaded()) return;
 
-    // Lọc ra các trạm đang bị DANGER (CRITICAL)
-    const redStations = latestData.stations_data.filter(station => {
-        // Tương tự logic getStatusFromCode
-        return station.code === 3 || station.status === "Nguy hiểm" || station.status === "CRITICAL"; 
-    });
-
+    // Lọc ra các trạm đang không an toàn (ADVISORY, WARNING, CRITICAL)
     const dangerFeatures = [];
-    redStations.forEach(st => {
-        // Tìm toạ độ từ cấu hình frontend
-        const loc = STATION_LOCATIONS.find(l => l.id === parseInt(st.station_name.replace('station_','')));
-        if (loc) {
-            const point = turf.point([loc.lng, loc.lat]);
-            const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 16 });
-            dangerFeatures.push(buffer);
+    latestData.stations_data.forEach(st => {
+        const status = st.status === "Nguy hiểm" || st.code === 3 ? 'CRITICAL' : 
+                       st.code === 2 ? 'WARNING' :
+                       st.code === 1 ? 'ADVISORY' : 'SAFE';
+                       
+        if (status !== 'SAFE') {
+            const loc = STATION_LOCATIONS.find(l => l.id === parseInt(st.station_name.replace('station_','')));
+            if (loc) {
+                const point = turf.point([loc.lng, loc.lat]);
+                const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 32 });
+                // Gán thuộc tính để biết mức độ nghiêm trọng
+                buffer.properties = { status: status, riskLevel: st.code }; 
+                dangerFeatures.push(buffer);
+            }
         }
     });
 
@@ -177,16 +205,19 @@ function analyzeFloodRoute() {
             const pt2 = routeCoords[i+1];
             const segmentLine = turf.lineString([pt1, pt2]);
             
-            let isDanger = false;
+            let highestRiskCode = 0;
             for (const dangerPoly of currentDangerPolygons.features) {
                 // Nếu giao nhau hoặc nằm trong
                 if (turf.booleanIntersects(segmentLine, dangerPoly)) {
-                    isDanger = true;
-                    break;
+                    if (dangerPoly.properties.riskLevel > highestRiskCode) {
+                        highestRiskCode = dangerPoly.properties.riskLevel;
+                    }
                 }
             }
             
-            const segStatus = isDanger ? 'danger' : 'safe';
+            const segStatus = highestRiskCode >= 3 ? 'CRITICAL' : 
+                              highestRiskCode === 2 ? 'WARNING' : 
+                              highestRiskCode === 1 ? 'ADVISORY' : 'safe';
             
             if (currentStatus === null) {
                 currentStatus = segStatus;
@@ -215,15 +246,26 @@ function analyzeFloodRoute() {
     }
     
     // Cập nhật UI Summary
-    const hasDanger = segments.some(s => s.properties.risk === 'danger');
+    const hasCritical = segments.some(s => s.properties.risk === 'CRITICAL');
+    const hasWarning = segments.some(s => s.properties.risk === 'WARNING');
+    const hasAdvisory = segments.some(s => s.properties.risk === 'ADVISORY');
+    
     const statusEl = document.getElementById('nav-summary-status');
-    if (hasDanger) {
+    if (hasCritical) {
         statusEl.className = 'nav-summary-status danger';
-        statusEl.innerHTML = '<span class="nav-status-icon">⚠️</span> Nguy cơ ngập trên tuyến. Đang tìm đường vòng...';
+        statusEl.innerHTML = '<span class="nav-status-icon" style="color: #e53935;">⚠️</span> Nguy cơ ngập nghiêm trọng trên tuyến. Đang tìm đường vòng...';
         fetchSafeAlternativeRoute();
+    } else if (hasWarning) {
+        statusEl.className = 'nav-summary-status warning';
+        statusEl.innerHTML = '<span class="nav-status-icon" style="color: #ef6c00;">⚠️</span> Có cảnh báo ngập nặng trên tuyến.';
+        if (navMapInstance.getSource('nav-alt-route-source')) navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
+    } else if (hasAdvisory) {
+        statusEl.className = 'nav-summary-status advisory';
+        statusEl.innerHTML = '<span class="nav-status-icon" style="color: #fbc02d;">⚠️</span> Có cảnh báo ngập nhẹ trên tuyến.';
+        if (navMapInstance.getSource('nav-alt-route-source')) navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
     } else {
         statusEl.className = 'nav-summary-status safe';
-        statusEl.innerHTML = '<span class="nav-status-icon">✓</span> Lộ trình an toàn';
+        statusEl.innerHTML = '<span class="nav-status-icon" style="color: #28a745;">✓</span> Lộ trình an toàn';
         if (navMapInstance.getSource('nav-alt-route-source')) {
             navMapInstance.getSource('nav-alt-route-source').setData(turf.featureCollection([]));
         }
