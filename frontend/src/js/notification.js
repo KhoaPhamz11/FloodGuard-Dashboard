@@ -47,8 +47,8 @@ function createNotificationItem(feedElement, timeString, station) {
 
     // Màu icon tam giác theo trạng thái
     const iconColors = {
-        ADVISORY: "#17a2b8",   // Xanh dương nhạt
-        WARNING:  "#ff9800",   // Cam
+        ADVISORY: "#fbc02d",   // Vàng
+        WARNING:  "#ef6c00",   // Cam đậm
         CRITICAL: "#e53935"    // Đỏ
     };
     const iconColor = iconColors[status] || "#8892b0";
