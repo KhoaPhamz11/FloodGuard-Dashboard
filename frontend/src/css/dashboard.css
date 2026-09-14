@@ -130,8 +130,8 @@
 
 .alert-item:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); }
 .alert-item.status-safe { border-left-color: #28a745; background: rgba(40, 167, 69, 0.08); }
-.alert-item.status-advisory { border-left-color: #00d4ff; background: rgba(0, 212, 255, 0.08); }
-.alert-item.status-warning { border-left-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
+.alert-item.status-advisory { border-left-color: #fbc02d; background: rgba(251, 192, 45, 0.08); }
+.alert-item.status-warning { border-left-color: #ef6c00; background: rgba(239, 108, 0, 0.1); }
 .alert-item.status-critical { border-left-color: #ff0040; background: rgba(255, 0, 64, 0.15); }
 
 .alert-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
@@ -220,8 +220,8 @@
 }
 
 .map-marker.marker-safe { background-color: #28a745; animation: marker-pulse-safe 2s infinite; }
-.map-marker.marker-advisory { background-color: #17a2b8; animation: marker-pulse-advisory 2s infinite; }
-.map-marker.marker-warning { background-color: #ff9800; animation: marker-pulse-warning 2s infinite; }
+.map-marker.marker-advisory { background-color: #fbc02d; animation: marker-pulse-advisory 2s infinite; }
+.map-marker.marker-warning { background-color: #ef6c00; animation: marker-pulse-warning 2s infinite; }
 .map-marker.marker-critical { background-color: #e53935; animation: marker-pulse-critical 2s infinite; }
 
 @keyframes marker-pulse-safe {
@@ -289,8 +289,8 @@
 .popup-district { color: #8892b0; font-size: 12px; margin-bottom: 8px; }
 .popup-status { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 6px; }
 .popup-status.status-safe     { background: rgba(40, 167, 69, 0.2);  color: #28a745; }
-.popup-status.status-advisory { background: rgba(23, 162, 184, 0.2); color: #17a2b8; }
-.popup-status.status-warning  { background: rgba(255, 152, 0, 0.2);  color: #ff9800; }
+.popup-status.status-advisory { background: rgba(251, 192, 45, 0.2); color: #fbc02d; }
+.popup-status.status-warning  { background: rgba(239, 108, 0, 0.2);  color: #ef6c00; }
 .popup-status.status-critical { background: rgba(229, 57, 53, 0.2);  color: #e53935; }
 
 /* =====================================================================
@@ -489,8 +489,8 @@
 }
 
 .water-status-badge.badge-safe     { background: rgba(40, 167, 69, 0.25);  color: #4cdf78; }
-.water-status-badge.badge-advisory { background: rgba(23, 162, 184, 0.25); color: #5cd6eb; }
-.water-status-badge.badge-warning  { background: rgba(255, 152, 0, 0.25);  color: #ffb74d; }
+.water-status-badge.badge-advisory { background: rgba(251, 192, 45, 0.25); color: #fbc02d; }
+.water-status-badge.badge-warning  { background: rgba(239, 108, 0, 0.25);  color: #ef6c00; }
 .water-status-badge.badge-critical { background: rgba(229, 57, 53, 0.3);   color: #ff6659; }
 
 /* --- Right Card: Metrics --- */
@@ -579,8 +579,8 @@
 }
 
 .status-text-safe     { color: #28a745 !important; font-size: 18px !important; }
-.status-text-advisory { color: #17a2b8 !important; font-size: 18px !important; }
-.status-text-warning  { color: #ff9800 !important; font-size: 18px !important; }
+.status-text-advisory { color: #fbc02d !important; font-size: 18px !important; }
+.status-text-warning  { color: #ef6c00 !important; font-size: 18px !important; }
 .status-text-critical { color: #e53935 !important; font-size: 18px !important; }
 
 /* ===== REPORTS GRID (5 biểu đồ) ===== */
@@ -1030,9 +1030,9 @@
 .water-box[data-status="SAFE"] .water-wave-2 { background: rgba(20, 80, 180, 0.12); }
 .water-box[data-status="SAFE"] .water-wave-3 { background: rgba(50, 150, 255, 0.10); }
 
-.water-box[data-status="ADVISORY"] .water-wave-1 { background: rgba(255, 180, 50, 0.15); }
-.water-box[data-status="ADVISORY"] .water-wave-2 { background: rgba(230, 150, 30, 0.12); }
-.water-box[data-status="ADVISORY"] .water-wave-3 { background: rgba(255, 200, 80, 0.10); }
+.water-box[data-status="ADVISORY"] .water-wave-1 { background: rgba(251, 192, 45, 0.15); }
+.water-box[data-status="ADVISORY"] .water-wave-2 { background: rgba(251, 192, 45, 0.12); }
+.water-box[data-status="ADVISORY"] .water-wave-3 { background: rgba(251, 192, 45, 0.10); }
 
 .water-box[data-status="WARNING"] .water-wave-1 { background: rgba(255, 120, 30, 0.15); }
 .water-box[data-status="WARNING"] .water-wave-2 { background: rgba(230, 90, 20, 0.12); }
@@ -1077,8 +1077,8 @@
 }
 
 .water-box[data-status="CRITICAL"] .radar-pulse { border-color: #e53935; }
-.water-box[data-status="WARNING"] .radar-pulse { border-color: #f57c00; }
-.water-box[data-status="ADVISORY"] .radar-pulse { border-color: #fdd835; }
+.water-box[data-status="WARNING"] .radar-pulse { border-color: #ef6c00; }
+.water-box[data-status="ADVISORY"] .radar-pulse { border-color: #fbc02d; }
  
 
 /* Refined Station Picker Typography */
@@ -1120,14 +1120,14 @@
     color: #4cdf78 !important;
 }
 .station-picker-btn.status-advisory-bg {
-    background: rgba(23, 162, 184, 0.15) !important;
-    border-color: rgba(23, 162, 184, 0.4) !important;
-    color: #5cd6eb !important;
+    background: rgba(251, 192, 45, 0.15) !important;
+    border-color: rgba(251, 192, 45, 0.4) !important;
+    color: #fbc02d !important;
 }
 .station-picker-btn.status-warning-bg {
-    background: rgba(255, 152, 0, 0.15) !important;
-    border-color: rgba(255, 152, 0, 0.4) !important;
-    color: #ffb74d !important;
+    background: rgba(239, 108, 0, 0.15) !important;
+    border-color: rgba(239, 108, 0, 0.4) !important;
+    color: #ef6c00 !important;
 }
 .station-picker-btn.status-critical-bg {
     background: rgba(229, 57, 53, 0.2) !important;
