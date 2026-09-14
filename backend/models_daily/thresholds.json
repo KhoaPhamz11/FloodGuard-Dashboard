@@ -1,0 +1,18 @@
+[
+  {
+    "horizon": 1,
+    "tenTram": "Nhà Bè",
+    "threshold": 1.521798897352674,
+    "threshold_source": "station_2022_calibration",
+    "station_positive_events_2022": 17,
+    "beta": 2.0
+  },
+  {
+    "horizon": 1,
+    "tenTram": "Phú An",
+    "threshold": 1.5171141736413436,
+    "threshold_source": "station_2022_calibration",
+    "station_positive_events_2022": 17,
+    "beta": 2.0
+  }
+]
