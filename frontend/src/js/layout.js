@@ -208,13 +208,13 @@ function updateStationPickerButtons(stationsData) {
             btn.style.setProperty("border-color", "rgba(40, 167, 69, 0.4)", "important");
             btn.style.setProperty("color", "#4cdf78", "important");
         } else if (status === "ADVISORY") {
-            btn.style.setProperty("background", "rgba(23, 162, 184, 0.15)", "important");
-            btn.style.setProperty("border-color", "rgba(23, 162, 184, 0.4)", "important");
-            btn.style.setProperty("color", "#5cd6eb", "important");
+            btn.style.setProperty("background", "rgba(251, 192, 45, 0.15)", "important");
+            btn.style.setProperty("border-color", "rgba(251, 192, 45, 0.4)", "important");
+            btn.style.setProperty("color", "#fbc02d", "important");
         } else if (status === "WARNING") {
-            btn.style.setProperty("background", "rgba(255, 152, 0, 0.15)", "important");
-            btn.style.setProperty("border-color", "rgba(255, 152, 0, 0.4)", "important");
-            btn.style.setProperty("color", "#ffb74d", "important");
+            btn.style.setProperty("background", "rgba(239, 108, 0, 0.15)", "important");
+            btn.style.setProperty("border-color", "rgba(239, 108, 0, 0.4)", "important");
+            btn.style.setProperty("color", "#ef6c00", "important");
         } else if (status === "CRITICAL") {
             btn.style.setProperty("background", "rgba(229, 57, 53, 0.2)", "important");
             btn.style.setProperty("border-color", "rgba(229, 57, 53, 0.5)", "important");
