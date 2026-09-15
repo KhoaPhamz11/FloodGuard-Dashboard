@@ -1,143 +1,353 @@
-// File này dùng để vẽ biểu đồ. 
-// Có 2 loại biểu đồ, biểu đồ realtime và biểu đồ vẽ cứ cách 6 tiếng vẽ 1 lần.
-/* 
-destroy(): Trước khi vẽ một loại biểu đồ mới (ví dụ đang vẽ đường chuyển sang vẽ cột), họa sĩ phải lấy giẻ lau sạch bảng cũ đi. Nếu không, các biểu đồ sẽ bị vẽ đè lên nhau sinh ra lỗi hiển thị
-push() và shift(): Đối với biểu đồ Realtime, ta muốn nó chạy liên tục từ phải sang trái. 
-Mỗi giây ta sẽ nhét (push) 1 điểm mới vào đuôi, và xóa (shift) 1 điểm cũ nhất ở đầu đi. Giống như một chiếc băng chuyền vậy!
-*/
+// File: chart.js — Vẽ biểu đồ ECharts (Real-time Streaming Engine)
+// Nâng cấp: Apache ECharts cho hiệu ứng luân chuyển dữ liệu mượt mà, bounding sliding window.
 
+const STREAMING_CONFIG = {
+    maxDataPoints: 60,
+    updateInterval: 1000,
+    animationDurationUpdate: 800 // Safety margin < 1000ms to finish animation before next tick
+};
 
-let floodChart = null; // Biến lưu trữ biểu đồ hiện tại (để destroy trước khi vẽ mới)
-let currentChartStationId = 1; // Mặc định mở web là trạm 1
-let currentChartType = "realtime-rain"; // Mặc định mở web là xem lượng mưa realtime
+// Global States
+let floodChart = null;
+let currentChartStationId = 1;
+let currentChartType = "realtime-rain";
 
-function initChartEvents() {                                             // HÀM 1: LẮNG NGHE SỰ KIỆN ĐỔI DROPDOWN BIỂU ĐỒ
-    const chartModeSelect = document.getElementById("chart-mode-select");            // Gắn thẻ dropdown chọn biểu đồ trên html cho biến chartModeSelect. Giả sử thẻ dropdown bên trong có nhiều options.
-    if (chartModeSelect) {                                                           
-        chartModeSelect.addEventListener("change", (event) => {                     // Nếu có thẻ dropdown thì chờ và lắng ghe xem người dùng có thay đổi option của dropdown.
-            const newChartType = event.target.value;                                // Nếu có thì xác định xem biểu đồ đc chọn mới là loại gì (event.target là dropdown nào vừa được tác độn, thêm.value là giá trị nào trong dropdown đang được chọn)
-            updateChartForStation(currentChartStationId, newChartType);             // Gọi hàm vẽ lại biểu đồ với Trạm giữ nguyên, Loại biểu đồ mới
+// Sliding window state for Main Chart
+let mainChartData = {
+    labels: [],
+    values: []
+};
+
+// Layer 6 states
+let reportCharts = []; 
+let currentReportStationId = null;
+let reportChartsData = []; // Array of { labels: [], values: [] }
+
+// Handle global resize
+window.addEventListener('resize', () => {
+    if (floodChart) floodChart.resize();
+    reportCharts.forEach(chart => {
+        if (chart) chart.resize();
+    });
+});
+
+// Common ECharts aesthetic settings for Command Center
+const getCommonEchartsOptions = () => ({
+    animationDurationUpdate: STREAMING_CONFIG.animationDurationUpdate,
+    animationEasingUpdate: 'linear', // Linear provides the smooth continuous sliding effect
+    backgroundColor: 'transparent',
+    grid: { top: 40, right: 30, bottom: 20, left: 40, containLabel: true },
+    tooltip: { 
+        trigger: 'axis', 
+        backgroundColor: 'rgba(13, 17, 51, 0.9)',
+        borderColor: '#00d4ff',
+        textStyle: { color: '#fff' }
+    },
+    xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+        axisLabel: { color: '#8892b0', fontSize: 10 },
+        splitLine: { show: false }
+    },
+    yAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } },
+        axisLabel: { color: '#8892b0', fontSize: 11 }
+    }
+});
+
+// ===== HÀM 1: LẮNG NGHE SỰ KIỆN ĐỔI DROPDOWN =====
+function initChartEvents() {
+    const chartModeSelect = document.getElementById("chart-mode-select");
+    if (chartModeSelect) {
+        chartModeSelect.addEventListener("change", (event) => {
+            const newChartType = event.target.value;
+            updateChartForStation(currentChartStationId, newChartType);
         });
     }
 }
 
-async function updateChartForStation(stationId, chartType) {           // HÀM 2: QUẢN LÝ LUỒNG VẼ BIỂU ĐỒ KHI ĐỔI TRẠM/CHẾ ĐỘ
-    currentChartStationId = stationId;                                             // Lưu lại trạng thái mới nhất, với trạng thái mới nhất là input của biểu đồ.
+// ===== HÀM 2: QUẢN LÝ LUỒNG VẼ =====
+async function updateChartForStation(stationId, chartType) {
+    currentChartStationId = stationId;
     currentChartType = chartType;
-    if (chartType === "history-rain-6h" || chartType === "history-tide-6h") {      // Chia luồng: Xem biểu đồ lịch sử hay xem Realtime?
-        await renderHistoryChart(stationId, chartType);                            // Nếu là xem biểu đồ lịch sử thì mở hàm xây dựng biểu đồ lịch sử
+    if (chartType === "history-rain-6h" || chartType === "history-tide-6h") {
+        await renderHistoryChart(stationId, chartType);
     } else {
-        initRealtimeChart(chartType);                                             // Nếu không phải hàm biểu đồ lịch sử thì mở hàm xây dựng biểu đồ realtime, tạo khung trục x,y thôi, còn dữ liệu thật thì nạp vào mỗi giây ở hàm 5.
+        initRealtimeChart(chartType);
     }
 }
 
+// ===== HÀM 3: VẼ BIỂU ĐỒ LỊCH SỬ 6 TIẾNG =====
+async function renderHistoryChart(stationId, chartType) {
+    const historyData = await fetchHistoryData();
+    if (!historyData || historyData.length === 0) return;
 
+    mainChartData = { labels: [], values: [] }; // Reset array
 
-async function renderHistoryChart(stationId, chartType) {             // HÀM 3: VẼ BIỂU ĐỒ LỊCH SỬ 6 TIẾNG (360 ĐIỂM)
-    const historyData = await fetchHistoryData();                               // Nhờ api.js gọi lấy data 6 tiếng (mảng 360 phần tử), hàm fetchHistoryData là hàm trong app.js
-    if (!historyData || historyData.length === 0) return;                       // Nếu lịch sử trống thì return
-
-    const labels = [];                                                          
-    const dataPoints = [];
-// Khúc này là thêm điểm lên biểu đồ.
-    historyData.forEach(minuteData => {                                        // Duyệt qua từng objects trong data, đặt tên cho từng thằng objects là minutedata
-        labels.push(minuteData.timestamp); // Trục X là thời gian          // SỬA: field thật là 'timestamp' (không phải datetime_str)
-        const station = minuteData.stations_data.find(s => getStationNumericId(s) === stationId);    // SỬA: field thật là 'stations_data' + so sánh bằng id số suy từ station_name (hàm getStationNumericId viết trong stations.js)
-        if (station) {                                                                
-            if (chartType === "history-rain-6h") {                                    // Nếu biểu đồ đang là lượng mưa trong 6h thì
-                dataPoints.push(station.R);                                           // SỬA: field thật là 'R' (không phải rainfall_R)
-            } else if (chartType === "history-tide-6h") {                             // Nếu biểu đồ là thuỷ triều trong 6h thì 
-                dataPoints.push(station.H_tide);                                      // SỬA: field thật là 'H_tide' (không phải tide_H)
+    historyData.forEach(minuteData => {
+        mainChartData.labels.push(minuteData.timestamp);
+        const station = minuteData.stations_data.find(s => getStationNumericId(s) === stationId);
+        if (station) {
+            if (chartType === "history-rain-6h") {
+                mainChartData.values.push(station.R);
+            } else if (chartType === "history-tide-6h") {
+                mainChartData.values.push(station.H_tide);
             }
         }
     });
 
-    if (floodChart) floodChart.destroy();                                             //Xóa biểu đồ cũ nếu có tồn tại 
-    const ctx = document.getElementById("flood-chart-canvas");                        // Tìm thẻ canvas gắn vào ctx
-    const chartStyle = chartType === "history-rain-6h" ? "bar" : "line";              // loại biểu đồ, nếu là lượng mưa thì biểu đồ cột, không phải thì đường (thuỷ triều)
-    const labelName = chartType === "history-rain-6h" ? "Lượng mưa 6h (mm/phút)" : "Thủy triều 6h (m)"; // Nhãn tên nếu chọn biểu đồ lượng mưa 6h thì nhãn tên là lượng mưa 6h còn không là thuỷ triều 6h(mm/phút).
+    const ctx = document.getElementById("flood-chart-canvas");
+    if (!ctx) return;
+    
+    if (floodChart) floodChart.dispose();
+    floodChart = echarts.init(ctx, 'dark'); // Force dark theme config parsing
 
-    floodChart = new Chart(ctx, {                                                     // Bắt đầu vẽ biểu đồ, với input là thẻ canvas và thông tin data biểu đồ.
-        type: chartStyle,                                                             // Loại biểu đồ thì phụ thuộc vào biểu đồ đang được chọn.
-        data: {
-            labels: labels,                                                           // Bên trái là thuộc tính labels mà chart yêu cầu, bên phải là labels mà chúng ta định nghĩa ở trên là tức là trục x thời gian mình đã khai báo trước đó.                                 
-            datasets: [{
-                label: labelName,                                                     //Data để vẽ biểu đồ thì lấy lấy nhãn tên phụ thuộc vào biểu đồ đang được chọn.
-                data: dataPoints,                                                     //Data điểm thì đã được thêm ở phái trên (giá trị trục y), ở đây nó sẽ ghép với trục x labels tương ứng.
-                backgroundColor: "rgba(54, 162, 235, 0.5)",                        // Set up màu, viền
-                borderColor: "rgba(54, 162, 235, 1)",
-                borderWidth: 1,                                                       // Độ rộng viền
-                pointRadius: 0 // Tắt chấm tròn để biểu đồ 360 điểm không bị rối mắt
-            }]
-        },
-        options: { responsive: true }
-    });
+    const isRain = chartType === "history-rain-6h";
+    const baseOpt = getCommonEchartsOptions();
+
+    floodChart.setOption({
+        ...baseOpt,
+        xAxis: { ...baseOpt.xAxis, data: mainChartData.labels },
+        series: [{
+            name: isRain ? 'Lượng mưa' : 'Thủy triều',
+            type: isRain ? 'bar' : 'line',
+            data: mainChartData.values,
+            itemStyle: { color: isRain ? '#00d4ff' : '#a4f4fd' },
+            areaStyle: isRain ? null : {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(0, 212, 255, 0.3)' },
+                    { offset: 1, color: 'rgba(0, 212, 255, 0)' }
+                ])
+            },
+            lineStyle: { width: 2 },
+            showSymbol: false
+        }]
+    }, true);
 }
 
+// ===== HÀM 4: KHỞI TẠO BIỂU ĐỒ REALTIME RỖNG =====
+function initRealtimeChart(chartType) {
+    const ctx = document.getElementById("flood-chart-canvas");
+    if (!ctx) return;
 
+    if (floodChart) {
+        floodChart.dispose(); // Use dispose to prevent memory leaks when fully recreating
+    }
+    
+    floodChart = echarts.init(ctx, 'dark'); // Initialize correctly with dark mode defaults
+    mainChartData = { labels: [], values: [] }; // Clear sliding window
 
-function initRealtimeChart(chartType) {                        // HÀM 4: KHỞI TẠO BIỂU ĐỒ REALTIME RỖNG (biến đầu vào là loại biểu đồ)
-    if (floodChart) floodChart.destroy();                      // Xoá biểu đồ trước đó
-    const ctx = document.getElementById("flood-chart-canvas"); // Gán thẻ <canvas> bằng biến ctx
-    let chartStyle = "line";                                   // dạng biểu đồ mặc định là biểu đồ đường.
-    let labelName = "";                                        // Tên biểu đồ để không.
+    let seriesConfig = {};
+    const baseOpt = getCommonEchartsOptions();
 
-     // Phân loại biểu đồ 
-    if (chartType === "realtime-rain") {                       // Nếu là biểu đồ mưa thì loại biểu đồ là cột và name là lượng mưa realtime.  
-        chartStyle = "bar";     
-        labelName = "Lượng mưa Realtime (mm/phút)";
-    } else if (chartType === "realtime-drainage") {             // Nếu là biểu đồ thoát nước thì loại biểu đồ là đường và name là khả năng thoát nước.
-        chartStyle = "line";
-        labelName = "Khả năng thoát nước (mm/phút)";            
-    } else if (chartType === "realtime-tide") {                 // Nếu là biểu đồ thuỷ triều thì loại biểu đồ là đường và name là thuỷ triều real time.
-        chartStyle = "line";
-        labelName = "Thủy triều Realtime (m)";
+    if (chartType === "realtime-rain") {
+        seriesConfig = {
+            name: 'Lượng mưa (mm)',
+            type: 'bar',
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#00d4ff' },
+                    { offset: 1, color: '#1a3a70' }
+                ]),
+                borderRadius: [4, 4, 0, 0]
+            }
+        };
+    } else if (chartType === "realtime-drainage") {
+        seriesConfig = {
+            name: 'Thoát nước',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#28a745' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(40, 167, 69, 0.4)' },
+                    { offset: 1, color: 'rgba(40, 167, 69, 0)' }
+                ])
+            }
+        };
+    } else if (chartType === "realtime-tide") {
+        seriesConfig = {
+            name: 'Thủy triều (m)',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#7b2ffc' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(123, 47, 252, 0.3)' },
+                    { offset: 1, color: 'rgba(123, 47, 252, 0)' }
+                ])
+            },
+            markLine: {
+                silent: true,
+                symbol: 'none',
+                data: [ { yAxis: 1.5, lineStyle: { color: '#ff9800', type: 'dashed' }, label: { content: 'Cảnh báo' } } ]
+            }
+        };
     }
 
-    floodChart = new Chart(ctx, {                               // Khúc trên là quy định nhãn, tên, loại biểu đồ, khúc dưới này là bước vẽ biểu đồ.
-        type: chartStyle,                                       // loại biểu đồ là ở trên.                                     
-        data: { 
-            labels: [], // Khởi tạo rỗng
-            datasets: [{
-                label: labelName,                               // tên biểu đồ là label name quy định ở trên.
-                data: [], // Khởi tạo rỗng
-                backgroundColor: "rgba(255, 99, 132, 0.5)",   // tạo màu cho nền, cho viền.
-                borderColor: "rgba(255, 99, 132, 1)",
-                borderWidth: 2,
-                tension: 0.3 // Làm cong đường line cho mượt
-            }]
-        },
-        options: { 
-            responsive: true,
-            animation: false // Tắt animation mặc định để lúc push điểm mới không bị giật
-        }
-    });
+    floodChart.setOption({
+        ...baseOpt,
+        xAxis: { ...baseOpt.xAxis, data: [] },
+        series: [ { ...seriesConfig, data: [] } ]
+    }, true);
 }
 
+// ===== HÀM 5: BƠM DỮ LIỆU REALTIME =====
+function updateRealtimeChart(latestData) {
+    if (!floodChart || currentChartType.includes("history")) return;
 
-function updateRealtimeChart(latestData) {                      // HÀM 5: BƠM DỮ LIỆU VÀO BIỂU ĐỒ REALTIME (GỌI MỖI GIÂY)
-   
-    if (!floodChart || currentChartType.includes("history")) return;                          // Nếu chưa có biểu đồ, hoặc đang xem lịch sử thì không làm gì cả
-    const station = latestData.stations_data.find(s => getStationNumericId(s) === currentChartStationId);   // SỬA: field thật là 'stations_data' + so sánh bằng id số suy từ station_name (hàm getStationNumericId viết trong stations.js)
+    const station = latestData.stations_data.find(s => getStationNumericId(s) === currentChartStationId);
     if (!station) return;
-    
-    let newValue = 0;                                                                       // Mặc định giá trị mới ban đầu =0
-    if (currentChartType === "realtime-rain") {                                             // Nếu là biểu đồ lượng mưa thì newvalue là giá trị tương ứng trong object.
-        newValue = station.R;                                                               // SỬA: field thật là 'R' (không phải rainfall_R)
-    } else if (currentChartType === "realtime-drainage") {                                  // Nếu biểu đồ thoát nước thì newvalue là giá trị tương ứng trong object.
-        newValue = station.D;                                                               // SỬA: field thật là 'D' (không phải drainage_D)
-    } else if (currentChartType === "realtime-tide") {                                      // Nếu biểu đồ thuỷ triều thì newvalue là giá trị tương ứng trong object.
-        newValue = station.H_tide;                                                          // SỬA: field thật là 'H_tide' (không phải tide_H)
+
+    let newValue = 0;
+    if (currentChartType === "realtime-rain") newValue = station.R;
+    else if (currentChartType === "realtime-drainage") newValue = station.D;
+    else if (currentChartType === "realtime-tide") newValue = station.H_tide;
+
+    // Data manager logic
+    mainChartData.labels.push(latestData.timestamp.split(' ')[1]); // Only keep time HH:mm:ss
+    mainChartData.values.push(newValue);
+
+    if (mainChartData.labels.length > STREAMING_CONFIG.maxDataPoints) {
+        mainChartData.labels.shift();
+        mainChartData.values.shift();
     }
 
-    floodChart.data.labels.push(latestData.timestamp);                                      // SỬA: field thật là 'timestamp' (không phải datetime_str)
-    floodChart.data.datasets[0].data.push(newValue);                                        // Đưa vào data rổng trong dataset (giá trị của trục y) bằng newvalue ở trên
-
-    
-    if (floodChart.data.labels.length > 60) {                                               // // Xét nếu dài quá 60 điểm (60 phút mô phỏng), xóa điểm cũ nhất ở đầu
-        floodChart.data.labels.shift();
-        floodChart.data.datasets[0].data.shift();
-    }
-    
-    floodChart.update(); //                                                                 Ra lệnh cập nhật nét vẽ lên màn hình
+    // Standard setOption for smooth diffing
+    floodChart.setOption({
+        xAxis: { data: mainChartData.labels },
+        series: [{ data: mainChartData.values }]
+    });
 }
+
+// ===========================================================================
+//  LAYER 6 — VẼ 5 BIỂU ĐỒ CHO 1 TRẠM
+// ===========================================================================
+async function renderAllChartsForStation(stationId) {
+    // Clean up old instances
+    reportCharts.forEach(c => { if (c) c.dispose(); });
+    reportCharts = [];
+    reportChartsData = [];
+    currentReportStationId = stationId;
+
+    const grid = document.getElementById("reports-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const nameEl = document.getElementById("reports-station-name");
+    if (nameEl && typeof getStationDisplayName === "function") {
+        nameEl.textContent = getStationDisplayName(stationId);
+    }
+
+    const timeRangeSelect = document.getElementById("report-time-range");
+    const minutes = timeRangeSelect ? parseInt(timeRangeSelect.value) : 360;
+    const timeLabel = timeRangeSelect && timeRangeSelect.options.length > 0 ? timeRangeSelect.options[timeRangeSelect.selectedIndex].text : "6 giờ qua";
+
+    const chartConfigs = [
+        { title: "🌧️ Lượng mưa Realtime", type: "bar", field: "R", color: "#00d4ff", isHistory: false },
+        { title: "🚰 Thoát nước Realtime", type: "line", field: "D", color: "#28a745", isHistory: false },
+        { title: "🌊 Thủy triều Realtime", type: "line", field: "H_tide", color: "#7b2ffc", isHistory: false },
+        { title: `📊 Lượng mưa (${timeLabel})`, type: "bar", field: "R", color: "#ff9800", isHistory: true },
+        { title: `📈 Thủy triều (${timeLabel})`, type: "line", field: "H_tide", color: "#ff0040", isHistory: true }
+    ];
+
+    let historyData = null;
+    try { historyData = await fetchHistoryData(minutes); } catch (e) {}
+
+    const baseOpt = getCommonEchartsOptions();
+    
+    chartConfigs.forEach((config, index) => {
+        const box = document.createElement("div");
+        box.className = "report-chart-box liquid-glass hover-motion-card";
+        const canvasId = `report-chart-canvas-${index}`;
+        
+        box.innerHTML = `
+            <h4>${config.title} <span class="live-indicator" style="display:${config.isHistory ? 'none' : 'inline-block'}; width:8px; height:8px; background:#ff0040; border-radius:50%; margin-left:6px; animation: live-pulse 2s infinite;"></span></h4>
+            <div class="report-chart-wrapper" id="${canvasId}" style="height:220px; width:100%;"></div>
+        `;
+        grid.appendChild(box);
+
+        const ctx = document.getElementById(canvasId);
+        const chart = echarts.init(ctx, 'dark');
+        
+        let labels = [];
+        let values = [];
+
+        if (config.isHistory && historyData && historyData.length > 0) {
+            historyData.forEach(m => {
+                labels.push(m.timestamp.split(' ')[1]);
+                const st = m.stations_data.find(s => getStationNumericId(s) === stationId);
+                if (st) values.push(st[config.field]);
+            });
+        }
+
+        reportChartsData.push({ labels, values });
+        reportCharts.push(chart);
+
+        chart.setOption({
+            ...baseOpt,
+            xAxis: { ...baseOpt.xAxis, data: labels },
+            series: [{
+                name: config.title,
+                type: config.type,
+                smooth: true,
+                showSymbol: false,
+                data: values,
+                itemStyle: { color: config.color },
+                areaStyle: config.type === 'line' ? {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: config.color.replace(')', ', 0.3)').replace('rgb', 'rgba') },
+                        { offset: 1, color: 'rgba(0,0,0,0)' }
+                    ])
+                } : null
+            }]
+        }, true);
+    });
+}
+
+function updateReportCharts(latestData) {
+    if (!currentReportStationId || reportCharts.length === 0) return;
+
+    const station = latestData.stations_data.find(
+        s => getStationNumericId(s) === currentReportStationId
+    );
+    if (!station) return;
+
+    const realtimeFields = ["R", "D", "H_tide"];
+    const timeStr = latestData.timestamp.split(' ')[1];
+
+    for (let i = 0; i < 3; i++) {
+        const chart = reportCharts[i];
+        if (!chart) continue;
+
+        const dataObj = reportChartsData[i];
+        dataObj.labels.push(timeStr);
+        dataObj.values.push(station[realtimeFields[i]]);
+
+        if (dataObj.labels.length > STREAMING_CONFIG.maxDataPoints) {
+            dataObj.labels.shift();
+            dataObj.values.shift();
+        }
+
+        chart.setOption({
+            xAxis: { data: dataObj.labels },
+            series: [{ data: dataObj.values }]
+        });
+    }
+}
+
+// Lắng nghe sự kiện thay đổi thời gian báo cáo
+document.addEventListener("DOMContentLoaded", () => {
+    const timeRangeSelect = document.getElementById("report-time-range");
+    if (timeRangeSelect) {
+        timeRangeSelect.addEventListener("change", () => {
+            if (currentReportStationId) {
+                renderAllChartsForStation(currentReportStationId);
+            }
+        });
+    }
+});

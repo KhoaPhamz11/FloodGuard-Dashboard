@@ -1,46 +1,82 @@
-// Nhận gói dữ liệu mới nhất được chuyển từ app.js  kiểm tra xem trong 9 trạm có trạm nào đang ở trạng thái nguy hiểm (khác Safe) hoặc có nguyên nhân gây ngập nào khác ngoài Normal không
-//Nếu có nó sẽ tạo ra một thẻ html nhỏ chứa đầy đủ thông tin: Thời gian, tên trạm, trạng thái, nguyên nhân và lời cảnh báo. Sau đó nó dán tờ thông báo này lên đầu mảng tin (notification- feed)
+// File: notification.js — Quản lý thông báo / cảnh báo
+// V2: Thêm icon tam giác <svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> với màu theo status, hỗ trợ cả Layer 1 (gần nhất) và Layer 3 (tất cả).
 
 
+// ===== HÀM 1: CẬP NHẬT THÔNG BÁO GẦN NHẤT (Layer 1) =====
+// Gọi mỗi giây từ app.js, chỉ hiện trạm đang có sự cố
+function updateNotificationFeed(latestData) {
+    const feed = document.getElementById("main-notification-feed");  // V2: đổi ID từ "notification-feed" sang "main-notification-feed"
+    if (!feed) return;
+    const timeString = latestData.timestamp;
 
-function updateNotificationFeed(latestData) {                    //HÀM 1: DUYỆT QUA 9 TRẠM ĐỂ TÌM SỰ CỐ (Hàm này sẽ được gọi mỗi giây từ app.js)    
-    const feed = document.getElementById("notification-feed");          // Tìm cái bảng tin trên giao diện HTML và gắn vào biến feed.
-    if (!feed) return;                                                 // Nếu chưa có thẻ này trong HTML thì thoát ra an toàn               
-    const timeString = latestData.timestamp;                          // SỬA: field thật là 'timestamp' (không phải datetime_str)
-  
-    latestData.stations_data.forEach(station => {                    // SỬA: field thật là 'stations_data' (không phải stations)
-        if (station.code !== 0) {                                    // SỬA: Mongo không có field 'root_cause'; dùng 'code' !== 0 (quy ước 0 = An toàn, xem getStatusFromCode ở stations.js) để biết trạm nào đang có sự cố
-            createNotificationItem(feed, timeString, station);                  // Gọi hàm tạo cảnh báo với input là thẻ thông báo của html, thời gian, và trạm thứ i đang chuyệt
+    latestData.stations_data.forEach(station => {
+        if (station.code !== 0) {
+            createNotificationItem(feed, timeString, station);
         }
     });
 }
 
 
+// ===== HÀM 2: CẬP NHẬT DANH SÁCH TẤT CẢ CẢNH BÁO (Layer 3) =====
+// Gọi mỗi giây từ app.js, cập nhật feed ở layer "Tất cả cảnh báo"
+function updateFullAlertsList(latestData) {
+    const feed = document.getElementById("alerts-full-list");
+    if (!feed) return;
+    const timeString = latestData.timestamp;
 
-function createNotificationItem(feedElement, timeString, station) {         //Hàm tạo cảnh báo với 3 input là thẻ thông báo của html, thời gian, và trạm thứ i đang chuyệt     
-    const alertItem = document.createElement("div");                        // Tạo ra một cái thẻ <div> trống trong bộ nhớ quản lí bằn biến Alert Item 
-    const status = typeof getStatusFromCode === "function" ? getStatusFromCode(station.code) : "ADVISORY";  // SỬA: suy ra SAFE/ADVISORY/WARNING/CRITICAL từ 'code' (hàm dùng chung viết trong stations.js), vì station.status thật là tiếng Việt "An toàn" không so sánh trực tiếp được
+    latestData.stations_data.forEach(station => {
+        if (station.code !== 0) {
+            createNotificationItem(feed, timeString, station);
+        }
+    });
+}
 
-    alertItem.classList.add("alert-item");                                  // Khung bo góc cơ bản của từng dòng tin.
-    if (status === "ADVISORY") {                                            // Nếu là cảnh báo nhẹ thì thêm hiệu ứng Advisory cho thẻ <div>
-        alertItem.classList.add("status-advisory");                 
-    } else if (status === "WARNING") {                                      // Nếu là cảnh báo nặng thì thêm hiệu ứng Warning cho thẻ <div>.
-        alertItem.classList.add("status-warning");
-    } else if (status === "CRITICAL") {                                     //Nếu là nguy hiểm thì thêm hiệu ứng Criticalcho thẻ <div>
-        alertItem.classList.add("status-critical");
-    }
 
-    // SỬA: Mongo không có field 'root_cause' hay 'message' như code cũ giả định.
-    // Tạm dùng 'description' (chữ Việt có sẵn, vd "An toàn") + 'S_risk' để thay thế.
-    // Nhóm chỉnh lại nội dung hiển thị ở đây nếu backend sau này thêm field message/nguyên nhân riêng.
-    alertItem.innerHTML = `                     
-        <strong>[${timeString}] ${station.station_name}</strong><br>
-        <span>Trạng thái: <b>${station.description}</b></span><br>
-        <span><em>Risk score: ${Number(station.S_risk).toFixed(2)}</em></span>
+// ===== HÀM 3: TẠO 1 DÒNG THÔNG BÁO (dùng chung cho cả Layer 1 và Layer 3) =====
+function createNotificationItem(feedElement, timeString, station) {
+    const alertItem = document.createElement("div");
+    const status = typeof getStatusFromCode === "function"
+        ? getStatusFromCode(station.code)
+        : "ADVISORY";
+
+    // Thêm class trạng thái
+    alertItem.classList.add("alert-item", "hover-motion-card");
+    if (status === "ADVISORY")      alertItem.classList.add("status-advisory");
+    else if (status === "WARNING")  alertItem.classList.add("status-warning");
+    else if (status === "CRITICAL") alertItem.classList.add("status-critical");
+
+    // Màu icon tam giác theo trạng thái
+    const iconColors = {
+        ADVISORY: "#fbc02d",   // Vàng
+        WARNING:  "#ef6c00",   // Cam đậm
+        CRITICAL: "#e53935"    // Đỏ
+    };
+    const iconColor = iconColors[status] || "#8892b0";
+
+    // Tên quận (nếu có STATION_LOCATIONS)
+    const stationId = typeof getStationNumericId === "function"
+        ? getStationNumericId(station)
+        : 0;
+    const loc = typeof getStationLocation === "function"
+        ? getStationLocation(stationId)
+        : null;
+    const districtName = loc ? loc.district : station.station_name;
+
+    // Tạo HTML cho dòng thông báo (thêm icon <svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> tam giác + tên quận)
+    alertItem.innerHTML = `
+        <span class="alert-icon" style="color: ${iconColor};"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
+        <div class="alert-content">
+            <strong>[${timeString}] Trạm ${districtName}</strong><br>
+            <span>Trạng thái: <b>${station.description}</b></span><br>
+            <span><em>Risk score: ${Number(station.S_risk).toFixed(2)}</em></span>
+        </div>
     `;
 
-    feedElement.prepend(alertItem);                              // Dán thẻ div này vào vị trí ĐẦU TIÊN của bảng tin (prepend) để giúp tin mới nhất luôn nằm trên cùng, đẩy tin cũ xuống dưới    
-    if (feedElement.children.length > 50) {                     // Dọn dẹp: Không để bảng tin dài vô tận làm nặng trình duyệt, feedElement tập hợp các phần tử con của HTML trực tiếp bên trong thẻ thông báo của html (FeedElemnet)
-        feedElement.removeChild(feedElement.lastChild);         
+    // Dán vào đầu feed (mới nhất trên cùng)
+    feedElement.prepend(alertItem);
+
+    // Giới hạn tối đa 50 dòng để không nặng trình duyệt
+    if (feedElement.children.length > 50) {
+        feedElement.removeChild(feedElement.lastChild);
     }
 }

@@ -1,0 +1,55 @@
+/* Liquid Wave Dynamic Colors */
+.water-box[data-status="SAFE"] .water-wave-1 { background: rgba(30, 100, 200, 0.15); }
+.water-box[data-status="SAFE"] .water-wave-2 { background: rgba(20, 80, 180, 0.12); }
+.water-box[data-status="SAFE"] .water-wave-3 { background: rgba(50, 150, 255, 0.10); }
+
+.water-box[data-status="ADVISORY"] .water-wave-1 { background: rgba(255, 180, 50, 0.15); }
+.water-box[data-status="ADVISORY"] .water-wave-2 { background: rgba(230, 150, 30, 0.12); }
+.water-box[data-status="ADVISORY"] .water-wave-3 { background: rgba(255, 200, 80, 0.10); }
+
+.water-box[data-status="WARNING"] .water-wave-1 { background: rgba(255, 120, 30, 0.15); }
+.water-box[data-status="WARNING"] .water-wave-2 { background: rgba(230, 90, 20, 0.12); }
+.water-box[data-status="WARNING"] .water-wave-3 { background: rgba(255, 150, 50, 0.10); }
+
+.water-box[data-status="CRITICAL"] .water-wave-1 { background: rgba(220, 50, 50, 0.20); }
+.water-box[data-status="CRITICAL"] .water-wave-2 { background: rgba(200, 30, 30, 0.15); }
+.water-box[data-status="CRITICAL"] .water-wave-3 { background: rgba(255, 70, 70, 0.12); }
+
+/* Radar Pulse Animation */
+.radar-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid #00ffff;
+    z-index: 0;
+    pointer-events: none;
+    animation: radar-pulse-anim 2s infinite ease-out;
+}
+.water-logo-mark {
+    position: relative; /* For radar pulse */
+}
+.water-logo-mark svg {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes radar-pulse-anim {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+    }
+}
+
+.water-box[data-status="CRITICAL"] .radar-pulse { border-color: #e53935; }
+.water-box[data-status="WARNING"] .radar-pulse { border-color: #f57c00; }
+.water-box[data-status="ADVISORY"] .radar-pulse { border-color: #fdd835; }
+
