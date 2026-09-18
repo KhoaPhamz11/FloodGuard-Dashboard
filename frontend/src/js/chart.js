@@ -236,7 +236,15 @@ async function renderAllChartsForStation(stationId) {
 
     const grid = document.getElementById("reports-grid");
     if (!grid) return;
-    grid.innerHTML = "";
+    
+    // Add loading indicator
+    grid.innerHTML = `
+        <div style="width: 100%; text-align: center; padding: 100px 20px; color: #8892b0; grid-column: 1 / -1;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: #00d4ff; animation: spin 1s ease-in-out infinite;"></div>
+            <div style="margin-top: 16px; font-family: 'DM Sans', sans-serif;">Đang tải dữ liệu báo cáo...</div>
+        </div>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    `;
 
     const nameEl = document.getElementById("reports-station-name");
     if (nameEl && typeof getStationDisplayName === "function") {
@@ -257,6 +265,9 @@ async function renderAllChartsForStation(stationId) {
 
     let historyData = null;
     try { historyData = await fetchHistoryData(minutes); } catch (e) {}
+
+    // Xóa loading spinner sau khi fetch xong
+    grid.innerHTML = "";
 
     const baseOpt = getCommonEchartsOptions();
     
