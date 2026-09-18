@@ -473,11 +473,12 @@
 }
 
 .water-status-label {
-    font-family: 'Caveat', cursive;
-    font-size: 18px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
-    letter-spacing: 0.3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .water-status-badge {
