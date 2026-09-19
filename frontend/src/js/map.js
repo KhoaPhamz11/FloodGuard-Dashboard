@@ -67,7 +67,9 @@ function initMaps() {
     createMarkersForMap(mainMap, mainMarkers, "main");
     
     mainMap.on('load', () => {
-        createRadarLayersForMap(mainMap);
+        if (typeof createRadarLayersForMap === 'function') {
+            createRadarLayersForMap(mainMap);
+        }
     });
 
     // Xử lý layout
@@ -96,7 +98,9 @@ function initFullscreenMap() {
         createMarkersForMap(fullscreenMap, fullscreenMarkers, "full");
         
         fullscreenMap.on('load', () => {
-            createRadarLayersForMap(fullscreenMap);
+            if (typeof createRadarLayersForMap === 'function') {
+                createRadarLayersForMap(fullscreenMap);
+            }
         });
     }
 

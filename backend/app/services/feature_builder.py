@@ -9,7 +9,7 @@ import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
 HOURLY_SCHEMA_PATH = ROOT_DIR / "backend" / "models_hourly" / "feature_schema.json"
-DAILY_SCHEMA_PATH = ROOT_DIR / "backend" / "models_daily" / "feature_schema.json"
+DAILY_SCHEMA_PATH = ROOT_DIR / "backend" / "model_daily" / "feature_schema.json"
 
 
 def _schema_features() -> list[str]:

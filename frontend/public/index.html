@@ -122,6 +122,19 @@
                     </div>
                 </div>
 
+                <div class="forecast-controls liquid-glass">
+                    <label for="overview-forecast-time">Thời điểm mô phỏng</label>
+                    <input id="overview-forecast-time" type="datetime-local">
+                    <select id="overview-forecast-horizon" aria-label="Khoảng dự báo">
+                        <option value="1">1 giờ</option>
+                        <option value="3">3 giờ</option>
+                        <option value="6">6 giờ</option>
+                        <option value="24">24 giờ</option>
+                    </select>
+                    <button id="overview-forecast-run" class="btn-switch-station">Chạy mô hình</button>
+                    <span id="overview-forecast-status">Chưa chạy mô phỏng</span>
+                </div>
+
                 <div class="main-content-grid">
                     <!-- MAIN MAP -->
                     <div class="card map-card motion-fade-up motion-p4 liquid-glass hover-motion-card">
@@ -191,6 +204,16 @@
                                     <input type="text" id="nav-start-input" class="nav-input" placeholder="Điểm xuất phát..." autocomplete="off">
                                     <div class="nav-suggestions" id="nav-start-suggestions" style="display: none;"></div>
                                 </div>
+                            </div>
+                            <div class="nav-input-row nav-forecast-row">
+                                <span class="nav-icon">◷</span>
+                                <input type="datetime-local" id="nav-departure-time" class="nav-input">
+                                <select id="nav-forecast-horizon" class="nav-input" aria-label="Khoảng dự báo">
+                                    <option value="1">1 giờ</option>
+                                    <option value="3">3 giờ</option>
+                                    <option value="6">6 giờ</option>
+                                    <option value="24">24 giờ</option>
+                                </select>
                             </div>
                             <div class="nav-input-row">
                                 <span class="nav-icon end-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></span>
@@ -400,14 +423,14 @@
     </div>
 
     <!-- ===== SCRIPTS ===== -->
-    <script src="../src/js/api.js?v=16"></script>
+    <script src="../src/js/api.js?v=17"></script>
     <script src="../src/js/stations.js?v=16"></script>
     <script src="../src/js/chart.js?v=16"></script>
     <script src="../src/js/notification.js?v=16"></script>
     <script src="../src/js/alerts.js?v=16"></script>
-    <script src="../src/js/map.js?v=16"></script>
-    <script src="../src/js/navigation.js?v=16"></script>
+    <script src="../src/js/map.js?v=17"></script>
+    <script src="../src/js/navigation.js?v=17"></script>
     <script src="../src/js/layout.js?v=16"></script>
-    <script src="../src/js/app.js?v=16"></script>
+    <script src="../src/js/app.js?v=17"></script>
 </body>
 </html>

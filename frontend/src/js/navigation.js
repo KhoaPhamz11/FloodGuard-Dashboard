@@ -341,6 +341,8 @@ async function fetchRoute() {
         const data = await res.json();
         const routeFeature = data.features[0];
         currentRouteGeoJSON = routeFeature;
+
+        await updateRouteForecast(routeFeature);
         
         // Xóa lộ trình thay thế cũ
         if (navMapInstance.getSource('nav-alt-route-source')) {
@@ -376,6 +378,40 @@ async function fetchRoute() {
             statusEl.innerHTML = '<span class="nav-status-icon" style="color:#e53935;">⚠️</span> Lỗi lấy lộ trình! Vui lòng kiểm tra lại ORS_API_KEY hoặc thử lại sau.';
             document.getElementById('nav-summary-panel').style.display = 'block';
         }
+    }
+}
+
+async function updateRouteForecast(routeFeature) {
+    const horizon = Number(document.getElementById("nav-forecast-horizon")?.value || 24);
+    const departure = document.getElementById("nav-departure-time")?.value || null;
+    const cuchi = turf.point([106.512778, 10.955556]);
+    let nearest = routeFeature.geometry.coordinates[0];
+    let nearestDistance = Infinity;
+    routeFeature.geometry.coordinates.forEach(coord => {
+        const distance = turf.distance(cuchi, turf.point(coord), { units: "kilometers" });
+        if (distance < nearestDistance) {
+            nearest = coord;
+            nearestDistance = distance;
+        }
+    });
+    try {
+        const result = await fetchForecast({
+            latitude: nearest[1],
+            longitude: nearest[0],
+            at: departure,
+            horizons: [horizon]
+        });
+        const status = document.getElementById("nav-summary-status");
+        if (!status) return;
+        const modelLabel = result.model === "hourly" ? "Hourly Củ Chi" : "Daily";
+        if (result.model_status === "unavailable") {
+            status.innerHTML = `<span class="nav-status-icon">!</span> Tuyến dùng ${modelLabel}: artifact daily chưa sẵn sàng.`;
+            return;
+        }
+        const forecast = result.model === "hourly" ? result.forecasts[0] : result.forecast;
+        status.innerHTML = `<span class="nav-status-icon">✓</span> ${modelLabel} (${result.station}): dự báo ${Number(forecast.predicted_water_level).toFixed(3)} m sau ${forecast.horizon_h}h.`;
+    } catch (error) {
+        console.error("Route forecast error:", error);
     }
 }
 
