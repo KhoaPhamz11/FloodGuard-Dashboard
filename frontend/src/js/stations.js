@@ -12,7 +12,8 @@ const STATION_LOCATIONS = [
     { id: 6, name: "station_6", district: "Quận 10",                 street: "Đường 3 Tháng 2",               lat: 10.7720, lng: 106.6680 },
     { id: 7, name: "station_7", district: "Bình Thạnh",              street: "Nguyễn Hữu Cảnh",               lat: 10.7940, lng: 106.7180 },
     { id: 8, name: "station_8", district: "Hóc Môn",                 street: "Ven sông Sài Gòn, xã Nhị Bình", lat: 10.8700, lng: 106.6950 },
-    { id: 9, name: "station_9", district: "Củ Chi",                  street: "Ven sông Sài Gòn, TT Củ Chi",   lat: 10.9750, lng: 106.4950 }
+    { id: 9, name: "station_9", district: "Củ Chi",                  street: "Ven sông Sài Gòn, TT Củ Chi",   lat: 10.9750, lng: 106.4950 },
+    { id: 10, name: "station_10", district: "Gò Vấp",                street: "Đường Quang Trung",             lat: 10.8250, lng: 106.6660 }
 ];
 
 // Lấy tên hiển thị đẹp cho trạm (ví dụ: "Trạm Quận 1")
@@ -83,7 +84,10 @@ function updateStationCards(stationsData) {
         if (rateVal)  rateVal.textContent  = Number(station.V).toFixed(2);
         if (riskVal)  riskVal.textContent  = Number(station.S_risk).toFixed(2);
 
-        const status = getStatusFromCode(station.code);
+        const idOverride = typeof forecastStationOverrides !== "undefined"
+            ? forecastStationOverrides[id]
+            : undefined;
+        const status = getStatusFromCode(idOverride !== undefined ? idOverride : station.code);
 
         // Đổi màu theo trạng thái
         card.classList.remove("status-safe", "status-advisory", "status-warning", "status-critical");

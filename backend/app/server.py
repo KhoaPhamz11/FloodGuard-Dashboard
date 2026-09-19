@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from backend.app.services.hourly_pipeline import predict_cuchi, predict_for_location, predict_all_stations
 
 # Xác định đường dẫn file .env một cách tuyệt đối (nằm ở thư mục backend/)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -146,6 +147,43 @@ def get_history_data(minutes: int = 360):
         r["_id"] = str(r["_id"])
     records.reverse()   # Vì lấy giảm dần (mới nhất đứng đầu 360,359,358..), ta cần đảo ngược list lại (reverse) để khi Frontend vẽ biểu đồ Chart.js, thời gian sẽ chạy từ trái (cũ) sang phải (mới)
     return records
+
+
+@app.get("/api/hourly-forecast")
+def get_hourly_forecast(
+    horizons: str = "1,3,6,24",
+    at: Optional[str] = None,
+    source: str = "csv",
+):
+    try:
+        requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
+        if not requested:
+            raise ValueError("At least one horizon is required")
+        return predict_cuchi(requested, at=at, source=source)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/forecast")
+def get_forecast(
+    latitude: float,
+    longitude: float,
+    at: Optional[str] = None,
+    horizons: str = "1,3,6,24",
+    source: str = "csv",
+):
+    try:
+        requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
+        return predict_for_location(latitude, longitude, requested, at=at, source=source)
+    except (ValueError, NotImplementedError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/forecast/stations")
+def get_station_forecasts(at: Optional[str] = None, horizon: int = 24):
+    if horizon not in {1, 3, 6, 24}:
+        raise HTTPException(status_code=400, detail="horizon must be one of 1, 3, 6, 24")
+    return predict_all_stations(at, horizon)
 
 # Serve Frontend Static Files
 import os

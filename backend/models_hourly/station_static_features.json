@@ -1,0 +1,10 @@
+{
+  "station_lon": 106.512778,
+  "station_lat": 10.955556,
+  "station_dist_to_river_m": 841.645767323727,
+  "station_tide_inf_sigmoid": 0.0318,
+  "station_tide_inf_exp": 0.1858,
+  "station_pct_impervious": 0.5212,
+  "station_channel_length_m": 1033.88,
+  "station_channel_density_m_m2": 0.000329
+}

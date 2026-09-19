@@ -70,6 +70,24 @@
 /* --- Forecast Card (placeholder) --- */
 .forecast-card { display: flex; flex-direction: column; }
 
+.nav-forecast-row select,
+.nav-forecast-row input {
+    min-height: 32px;
+    color: #eaf4ff;
+    background: rgba(10, 19, 35, 0.78);
+    border: 1px solid rgba(120, 180, 220, 0.25);
+    border-radius: 4px;
+    padding: 0 9px;
+}
+
+.nav-forecast-row {
+    align-items: center;
+}
+
+.nav-forecast-row select {
+    width: 92px;
+}
+
 .forecast-placeholder {
     flex: 1;
     display: flex;

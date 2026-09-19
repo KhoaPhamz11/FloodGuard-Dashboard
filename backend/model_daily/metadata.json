@@ -1,0 +1,29 @@
+{
+  "model_version": "water_flood_t1",
+  "training_split": "train ≤ 2019; validation = 2020; test ≥ 2021",
+  "target": "delta peak water level; final = y_t + predicted_delta",
+  "prediction_horizons": [
+    1
+  ],
+  "ensemble": [
+    "lightgbm",
+    "xgboost",
+    "catboost"
+  ],
+  "blend": "equal_weight",
+  "severity_levels": {
+    "0": "< 1.40 m",
+    "I": "1.40 – < 1.50 m",
+    "II": "1.50 – < 1.60 m",
+    "III": "≥ 1.60 m (includes former IV)"
+  },
+  "binary_flood_definition": "alarm_level ≥ 1 (i.e. ≥ 1.40 m)",
+  "conformal": "q90 calibrated from 2020 validation residuals",
+  "stations": [
+    "Hóc Môn",
+    "Lê Minh Xuân",
+    "Thủ Đức",
+    "Nhà Bè",
+    "Phú An"
+  ]
+}

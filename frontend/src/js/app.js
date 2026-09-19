@@ -81,6 +81,23 @@ async function initDashboard() {
 
 // ===== HÀM 2: PHÂN PHỐI DỮ LIỆU CHO TẤT CẢ MODULES =====
 function updateDashboardUI(latestData) {
+    if (!latestData || !latestData.stations_data) return;
+
+    if (typeof STATION_LOCATIONS !== "undefined") {
+        STATION_LOCATIONS.forEach(loc => {
+            const exists = latestData.stations_data.find(s => {
+                const sId = typeof getStationNumericId === "function" ? getStationNumericId(s) : parseInt(s.station_name.split("_")[1], 10);
+                return sId === loc.id;
+            });
+            if (!exists) {
+                latestData.stations_data.push({
+                    station_name: "station_" + loc.id,
+                    R: 0, D: 0, H: 0, V: 0, H_tide: 0, S_risk: 0, code: 0, description: "SAFE"
+                });
+            }
+        });
+    }
+
     // Module 1: Cập nhật 9 ô trạm (nếu grid tồn tại)
     if (typeof updateStationCards === "function") {
         updateStationCards(latestData.stations_data);
@@ -160,7 +177,7 @@ function updateCommandCenterKPIs(latestData) {
 
     // Cập nhật số trạm online
     const onlineEl = document.getElementById("kpi-stations-online");
-    if (onlineEl) onlineEl.textContent = `${onlineCount} / ${latestData.stations_data.length}`;
+    if (onlineEl) onlineEl.textContent = `${onlineCount} / ${typeof STATION_LOCATIONS !== 'undefined' ? STATION_LOCATIONS.length : latestData.stations_data.length}`;
 
     // Cập nhật Risk Score lớn nhất
     const riskEl = document.getElementById("kpi-max-risk");
