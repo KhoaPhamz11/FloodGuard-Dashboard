@@ -10,10 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- MapLibre GL CSS -->
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../src/css/style.css?v=16">
-    <link rel="stylesheet" href="../src/css/dashboard.css?v=16">
-    <link rel="stylesheet" href="../src/css/motion.css?v=16">
-    <link rel="stylesheet" href="../src/css/alert-center.css?v=16">
+    <link rel="stylesheet" href="../src/css/style.css?v=18">
+    <link rel="stylesheet" href="../src/css/dashboard.css?v=18">
+    <link rel="stylesheet" href="../src/css/motion.css?v=18">
+    <link rel="stylesheet" href="../src/css/alert-center.css?v=18">
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
     <!-- Turf.js for Geospatial Analysis -->
@@ -122,19 +122,6 @@
                     </div>
                 </div>
 
-                <div class="forecast-controls liquid-glass">
-                    <label for="overview-forecast-time">Thời điểm mô phỏng</label>
-                    <input id="overview-forecast-time" type="datetime-local">
-                    <select id="overview-forecast-horizon" aria-label="Khoảng dự báo">
-                        <option value="1">1 giờ</option>
-                        <option value="3">3 giờ</option>
-                        <option value="6">6 giờ</option>
-                        <option value="24">24 giờ</option>
-                    </select>
-                    <button id="overview-forecast-run" class="btn-switch-station">Chạy mô hình</button>
-                    <span id="overview-forecast-status">Chưa chạy mô phỏng</span>
-                </div>
-
                 <div class="main-content-grid">
                     <!-- MAIN MAP -->
                     <div class="card map-card motion-fade-up motion-p4 liquid-glass hover-motion-card">
@@ -165,10 +152,27 @@
 
                         <div class="card notification-card motion-fade-up motion-p5 liquid-glass hover-motion-card">
                             <div class="card-header">
-                                <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>️ Cảnh báo gần nhất</h3>
+                                <h3><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> TRUNG TÂM CẢNH BÁO</h3>
                                 <a class="view-all-link hover-motion-btn" id="btnViewAllAlerts" href="#">Tất cả ›</a>
                             </div>
-                            <div class="notification-feed motion-stagger-children" id="main-notification-feed">
+                            <!-- Mini Alert Summary -->
+                            <div class="alert-summary-horizontal" style="margin-bottom: 0;">
+                                <div class="summary-item critical" onclick="if(typeof toggleAlertCenter === 'function') { toggleAlertCenter('sidebar'); setSeverityFilter('critical'); }">
+                                    <span class="count" id="mini-count-critical">0</span>
+                                    <span class="label">NGHIÊM TRỌNG</span>
+                                </div>
+                                <div class="summary-item warning" onclick="if(typeof toggleAlertCenter === 'function') { toggleAlertCenter('sidebar'); setSeverityFilter('warning'); }">
+                                    <span class="count" id="mini-count-warning">0</span>
+                                    <span class="label">CẢNH BÁO NẶNG</span>
+                                </div>
+                                <div class="summary-item info" onclick="if(typeof toggleAlertCenter === 'function') { toggleAlertCenter('sidebar'); setSeverityFilter('info'); }">
+                                    <span class="count" id="mini-count-info">0</span>
+                                    <span class="label">CẢNH BÁO NHẸ</span>
+                                </div>
+                                <div class="summary-item safe" onclick="if(typeof toggleAlertCenter === 'function') { toggleAlertCenter('sidebar'); setSeverityFilter('safe'); }">
+                                    <span class="count" id="mini-count-safe">0</span>
+                                    <span class="label">AN TOÀN</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -423,14 +427,14 @@
     </div>
 
     <!-- ===== SCRIPTS ===== -->
-    <script src="../src/js/api.js?v=17"></script>
-    <script src="../src/js/stations.js?v=16"></script>
-    <script src="../src/js/chart.js?v=16"></script>
-    <script src="../src/js/notification.js?v=16"></script>
-    <script src="../src/js/alerts.js?v=16"></script>
-    <script src="../src/js/map.js?v=17"></script>
-    <script src="../src/js/navigation.js?v=17"></script>
-    <script src="../src/js/layout.js?v=16"></script>
-    <script src="../src/js/app.js?v=17"></script>
+    <script src="../src/js/api.js?v=18"></script>
+    <script src="../src/js/stations.js?v=18"></script>
+    <script src="../src/js/chart.js?v=19"></script>
+    <script src="../src/js/notification.js?v=18"></script>
+    <script src="../src/js/alerts.js?v=18"></script>
+    <script src="../src/js/map.js?v=18"></script>
+    <script src="../src/js/navigation.js?v=18"></script>
+    <script src="../src/js/layout.js?v=18"></script>
+    <script src="../src/js/app.js?v=18"></script>
 </body>
 </html>

@@ -165,6 +165,17 @@ function createMarkersForMap(map, markersObj, prefix) {
 }
 
 // ===== CẬP NHẬT MÀU MARKER THEO STATUS =====
+let forecastStationOverrides = {};
+
+function applyForecastStationColors(forecasts) {
+    forecastStationOverrides = {};
+    (forecasts || []).forEach(forecast => {
+        if (forecast.forecast_ready) {
+            forecastStationOverrides[forecast.frontend_station_id] = forecast.risk_code;
+        }
+    });
+}
+
 function updateMapMarkers(stationsData) {
     if (!stationsData || !mapsInitialized) return;
 
@@ -177,7 +188,10 @@ function updateMapMarkers(stationsData) {
 
     stationsData.forEach(station => {
         const id = getStationNumericId(station);
-        const status = getStatusFromCode(station.code);
+        const effectiveCode = Object.prototype.hasOwnProperty.call(forecastStationOverrides, id)
+            ? forecastStationOverrides[id]
+            : station.code;
+        const status = getStatusFromCode(effectiveCode);
         const markerClass = `marker-${status.toLowerCase()}`;
 
         ["main", "full", "nav"].forEach(prefix => {

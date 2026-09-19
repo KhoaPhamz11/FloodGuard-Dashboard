@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from backend.app.services.hourly_pipeline import predict_cuchi, predict_for_location
+from backend.app.services.hourly_pipeline import predict_cuchi, predict_for_location, predict_all_stations
 
 # Xác định đường dẫn file .env một cách tuyệt đối (nằm ở thư mục backend/)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -177,6 +177,13 @@ def get_forecast(
         return predict_for_location(latitude, longitude, requested, at=at, source=source)
     except (ValueError, NotImplementedError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/forecast/stations")
+def get_station_forecasts(at: Optional[str] = None, horizon: int = 24):
+    if horizon not in {1, 3, 6, 24}:
+        raise HTTPException(status_code=400, detail="horizon must be one of 1, 3, 6, 24")
+    return predict_all_stations(at, horizon)
 
 # Serve Frontend Static Files
 import os

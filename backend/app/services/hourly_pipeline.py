@@ -20,12 +20,19 @@ CSV_SOURCE = "csv"
 MONGO_SOURCE = "mongo"
 CUCHI_COORDS = (10.955556, 106.512778)
 HOURLY_RADIUS_KM = 5.0
+FLOOD_THRESHOLDS = ((1.60, "CRITICAL", 3), (1.50, "WARNING", 2), (1.40, "ADVISORY", 1))
 DAILY_STATIONS = {
     "Nhà Bè": (10.639444, 106.734722),
     "Phú An": (10.778611, 106.707778),
     "Hóc Môn": (10.888190, 106.598219),
     "Lê Minh Xuân": (10.777222, 106.537222),
     "Thủ Đức": (10.844789, 106.755827),
+}
+FORECAST_STATION_IDS = {
+    "Củ Chi": 9,
+    "Hóc Môn": 8,
+    "Nhà Bè": 5,
+    "Phú An": 3,
 }
 
 
@@ -78,6 +85,13 @@ def _water_level_rate(features: pd.DataFrame, timestamp: pd.Timestamp) -> tuple[
     )
 
 
+def _risk_from_level(level: float) -> tuple[str, int]:
+    for threshold, risk, code in FLOOD_THRESHOLDS:
+        if level >= threshold:
+            return risk, code
+    return "SAFE", 0
+
+
 def predict_cuchi(
     horizons: list[int] | None = None,
     at: str | None = None,
@@ -104,6 +118,8 @@ def predict_cuchi(
         predictor.predict_from_features(selected.to_dict(), current_level, horizon)
         for horizon in selected_horizons
     ]
+    max_level = max(item["predicted_water_level"] for item in forecasts)
+    risk_level, risk_code = _risk_from_level(max_level)
     return {
         "station": "Củ Chi",
         "source": source,
@@ -114,6 +130,9 @@ def predict_cuchi(
         "water_level_rate_m_per_s": rate,
         "water_level_rate_m_per_hour": rate * 3600,
         "delta_t_seconds": delta_seconds,
+        "forecast_ready": True,
+        "risk_level": risk_level,
+        "risk_code": risk_code,
         "forecasts": forecasts,
     }
 
@@ -155,6 +174,9 @@ def predict_for_location(
             "distance_to_station_km": station_distance,
             "requested_horizons": [24],
             "forecast": daily_result,
+            "forecast_ready": True,
+            "risk_level": {0: "SAFE", 1: "ADVISORY", 2: "WARNING", 3: "CRITICAL"}.get(int(daily_result["alarm_level"]), "SAFE"),
+            "risk_code": int(daily_result["alarm_level"]),
         }
     except (FileNotFoundError, ImportError, ValueError) as error:
         return {
@@ -165,4 +187,48 @@ def predict_for_location(
             "distance_to_station_km": station_distance,
             "requested_horizons": [24],
             "forecast": None,
+            "forecast_ready": False,
+            "risk_level": "SAFE",
+            "risk_code": 0,
         }
+
+
+def predict_all_stations(at: str | None, horizon: int) -> dict:
+    requested_time = pd.Timestamp.now().floor("h") if at is None else pd.Timestamp(at).floor("h")
+    target_time = requested_time + pd.Timedelta(hours=horizon)
+    forecasts = []
+
+    try:
+        hourly = predict_cuchi([horizon], at=requested_time.isoformat())
+        hourly_forecast = hourly["forecasts"][0]
+        forecasts.append({
+            "station": "Củ Chi",
+            "frontend_station_id": FORECAST_STATION_IDS["Củ Chi"],
+            "model": "hourly",
+            "forecast_ready": target_time == requested_time + pd.Timedelta(hours=horizon),
+            "target_timestamp": target_time.isoformat(),
+            "risk_code": _risk_from_level(float(hourly_forecast["predicted_water_level"]))[1],
+        })
+    except (ValueError, FileNotFoundError):
+        forecasts.append({"station": "Củ Chi", "frontend_station_id": 9, "model": "hourly", "forecast_ready": False, "risk_code": 0})
+
+    for station_name, station_id in FORECAST_STATION_IDS.items():
+        if station_name == "Củ Chi":
+            continue
+        if horizon != 24:
+            forecasts.append({"station": station_name, "frontend_station_id": station_id, "model": "daily", "forecast_ready": False, "risk_code": 0})
+            continue
+        try:
+            daily = predict_daily_station(station_name, at=requested_time.isoformat())
+            daily_target = pd.Timestamp(daily["target_timestamp"])
+            forecasts.append({
+                "station": station_name,
+                "frontend_station_id": station_id,
+                "model": "daily",
+                "forecast_ready": daily_target == target_time,
+                "target_timestamp": daily_target.isoformat(),
+                "risk_code": int(daily["alarm_level"]) if daily_target == target_time else 0,
+            })
+        except (ValueError, FileNotFoundError, ImportError):
+            forecasts.append({"station": station_name, "frontend_station_id": station_id, "model": "daily", "forecast_ready": False, "risk_code": 0})
+    return {"requested_timestamp": requested_time.isoformat(), "target_timestamp": target_time.isoformat(), "horizon_h": horizon, "forecasts": forecasts}

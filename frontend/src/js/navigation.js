@@ -5,6 +5,8 @@ let currentStartCoords = null;
 let currentEndCoords = null;
 let currentRouteGeoJSON = null;
 let currentDangerPolygons = null;
+let currentForecastRisk = 'safe';
+let currentForecastReady = false;
 let lastKnownFloodData = null;
 
 const FLOOD_ALERT_RADIUS_KM = 1; // Bán kính cảnh báo 1km
@@ -190,53 +192,10 @@ function analyzeFloodRoute() {
     // Tạo LineString cho route hiện tại
     const routeLine = turf.lineString(routeCoords);
     
-    // Nếu không có vùng nguy hiểm nào, toàn bộ là an toàn
-    if (!currentDangerPolygons || currentDangerPolygons.features.length === 0) {
-        segments.push(turf.feature(routeLine.geometry, { risk: 'safe' }));
-    } else {
-        // Logic cắt đoạn: Thay vì cắt phức tạp, chúng ta sẽ chia LineString thành các đoạn nhỏ giữa từng điểm toạ độ
-        // và kiểm tra xem đoạn nhỏ đó có giao cắt với vùng nguy hiểm không. (Phù hợp cho Phase 1)
-        
-        let currentStatus = null;
-        let currentChunkCoords = [];
-        
-        for (let i = 0; i < routeCoords.length - 1; i++) {
-            const pt1 = routeCoords[i];
-            const pt2 = routeCoords[i+1];
-            const segmentLine = turf.lineString([pt1, pt2]);
-            
-            let highestRiskCode = 0;
-            for (const dangerPoly of currentDangerPolygons.features) {
-                // Nếu giao nhau hoặc nằm trong
-                if (turf.booleanIntersects(segmentLine, dangerPoly)) {
-                    if (dangerPoly.properties.riskLevel > highestRiskCode) {
-                        highestRiskCode = dangerPoly.properties.riskLevel;
-                    }
-                }
-            }
-            
-            const segStatus = highestRiskCode >= 3 ? 'CRITICAL' : 
-                              highestRiskCode === 2 ? 'WARNING' : 
-                              highestRiskCode === 1 ? 'ADVISORY' : 'safe';
-            
-            if (currentStatus === null) {
-                currentStatus = segStatus;
-                currentChunkCoords.push(pt1, pt2);
-            } else if (currentStatus === segStatus) {
-                currentChunkCoords.push(pt2);
-            } else {
-                // Đổi trạng thái -> Lưu chunk cũ
-                segments.push(turf.feature(turf.lineString(currentChunkCoords).geometry, { risk: currentStatus }));
-                // Bắt đầu chunk mới
-                currentStatus = segStatus;
-                currentChunkCoords = [pt1, pt2]; // Đoạn mới nối tiếp
-            }
-        }
-        
-        if (currentChunkCoords.length > 1) {
-            segments.push(turf.feature(turf.lineString(currentChunkCoords).geometry, { risk: currentStatus }));
-        }
-    }
+    // Forecast là nguồn duy nhất quyết định màu tuyến. Chưa có dữ liệu => xanh an toàn.
+    segments.push(turf.feature(routeLine.geometry, {
+        risk: currentForecastReady ? currentForecastRisk : 'safe'
+    }));
 
     const segmentedCollection = turf.featureCollection(segments);
     
@@ -384,6 +343,14 @@ async function fetchRoute() {
 async function updateRouteForecast(routeFeature) {
     const horizon = Number(document.getElementById("nav-forecast-horizon")?.value || 24);
     const departure = document.getElementById("nav-departure-time")?.value || null;
+    const stationForecasts = await fetchStationForecasts({ at: departure, horizon });
+    applyForecastStationColors(stationForecasts.forecasts);
+    if (lastKnownFloodData?.stations_data) {
+        updateMapMarkers(lastKnownFloodData.stations_data);
+        if (typeof updateStationCards === 'function') {
+            updateStationCards(lastKnownFloodData.stations_data);
+        }
+    }
     const cuchi = turf.point([106.512778, 10.955556]);
     let nearest = routeFeature.geometry.coordinates[0];
     let nearestDistance = Infinity;
@@ -404,14 +371,19 @@ async function updateRouteForecast(routeFeature) {
         const status = document.getElementById("nav-summary-status");
         if (!status) return;
         const modelLabel = result.model === "hourly" ? "Hourly Củ Chi" : "Daily";
+        currentForecastReady = Boolean(result.forecast_ready);
+        const forecastRisk = String(result.risk_level || 'SAFE').toUpperCase();
+        currentForecastRisk = forecastRisk === 'SAFE' ? 'safe' : forecastRisk;
         if (result.model_status === "unavailable") {
-            status.innerHTML = `<span class="nav-status-icon">!</span> Tuyến dùng ${modelLabel}: artifact daily chưa sẵn sàng.`;
+            currentForecastReady = false;
+            currentForecastRisk = 'safe';
             return;
         }
-        const forecast = result.model === "hourly" ? result.forecasts[0] : result.forecast;
-        status.innerHTML = `<span class="nav-status-icon">✓</span> ${modelLabel} (${result.station}): dự báo ${Number(forecast.predicted_water_level).toFixed(3)} m sau ${forecast.horizon_h}h.`;
+        status.innerHTML = `<span class="nav-status-icon">✓</span> Đã phân loại màu trạm theo ${modelLabel}.`;
     } catch (error) {
         console.error("Route forecast error:", error);
+        currentForecastReady = false;
+        currentForecastRisk = 'safe';
     }
 }
 
@@ -560,6 +532,13 @@ function updateMarkers() {
 }
 
 // 6. Gắn sự kiện UI
+const departureTimeInput = document.getElementById('nav-departure-time');
+if (departureTimeInput && !departureTimeInput.value) {
+    const now = new Date();
+    const pad = value => String(value).padStart(2, '0');
+    departureTimeInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
 document.getElementById('nav-start-input').addEventListener('input', () => {
     handleGeocode('nav-start-input', 'nav-start-suggestions', (coords) => { currentStartCoords = coords; });
 });

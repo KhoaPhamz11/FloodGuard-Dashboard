@@ -74,50 +74,8 @@ async function initDashboard() {
     console.log("Dữ liệu ban đầu:", initialData);
     updateDashboardUI(initialData);
 
-    initForecastControls();
-
     // Bật vòng lặp realtime
     startRealtimeUpdates();
-}
-
-function toLocalDateTimeValue(date) {
-    const pad = value => String(value).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function initForecastControls() {
-    const timeInput = document.getElementById("overview-forecast-time");
-    const runButton = document.getElementById("overview-forecast-run");
-    const navTimeInput = document.getElementById("nav-departure-time");
-    const now = toLocalDateTimeValue(new Date());
-    if (timeInput && !timeInput.value) timeInput.value = now;
-    if (navTimeInput && !navTimeInput.value) navTimeInput.value = now;
-    if (runButton) runButton.addEventListener("click", runOverviewForecast);
-}
-
-async function runOverviewForecast() {
-    const time = document.getElementById("overview-forecast-time")?.value;
-    const horizon = Number(document.getElementById("overview-forecast-horizon")?.value || 1);
-    const status = document.getElementById("overview-forecast-status");
-    if (!status) return;
-    status.textContent = "Đang chạy mô hình...";
-    try {
-        const result = await fetchForecast({
-            latitude: 10.955556,
-            longitude: 106.512778,
-            at: time,
-            horizons: [horizon]
-        });
-        if (result.model_status === "unavailable") {
-            status.textContent = "Daily model chưa được cài artifact";
-            return;
-        }
-        const forecast = result.forecasts[0];
-        status.textContent = `Củ Chi · ${forecast.predicted_water_level.toFixed(3)} m sau ${horizon}h · tốc độ ${result.water_level_rate_m_per_hour.toFixed(3)} m/h`;
-    } catch (error) {
-        console.error("Forecast error:", error);
-        status.textContent = "Không chạy được mô hình";
-    }
 }
 
 

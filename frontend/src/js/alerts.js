@@ -214,6 +214,16 @@ function updateSummaryCounts(latestData) {
     if (elW) elW.textContent = warning;
     if (elI) elI.textContent = info;
     if (elS) elS.textContent = safe;
+
+    const miniC = document.getElementById('mini-count-critical');
+    const miniW = document.getElementById('mini-count-warning');
+    const miniI = document.getElementById('mini-count-info');
+    const miniS = document.getElementById('mini-count-safe');
+
+    if (miniC) miniC.textContent = critical;
+    if (miniW) miniW.textContent = warning;
+    if (miniI) miniI.textContent = info;
+    if (miniS) miniS.textContent = safe;
 }
 
 function updateBadges() {

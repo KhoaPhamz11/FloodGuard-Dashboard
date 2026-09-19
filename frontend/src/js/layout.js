@@ -112,7 +112,9 @@ function initLayout() {
     if (btnAllAlerts) {
         btnAllAlerts.addEventListener("click", (e) => {
             e.preventDefault();
-            showLayer("alerts");
+            if(typeof toggleAlertCenter === 'function') {
+                toggleAlertCenter('sidebar');
+            }
         });
     }
 

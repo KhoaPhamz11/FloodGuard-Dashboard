@@ -64,4 +64,5 @@ def predict_daily_station(station_name: str, at: str | None = None) -> dict:
     result["horizon_h"] = 24
     result["feature_date"] = row.iloc[0]["ngay"].isoformat()
     result["predicted_water_level"] = float(result["pred_peak"])
+    result["target_timestamp"] = (row.iloc[0]["ngay"] + pd.Timedelta(hours=24)).isoformat()
     return result

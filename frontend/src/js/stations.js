@@ -83,7 +83,10 @@ function updateStationCards(stationsData) {
         if (rateVal)  rateVal.textContent  = Number(station.V).toFixed(2);
         if (riskVal)  riskVal.textContent  = Number(station.S_risk).toFixed(2);
 
-        const status = getStatusFromCode(station.code);
+        const idOverride = typeof forecastStationOverrides !== "undefined"
+            ? forecastStationOverrides[id]
+            : undefined;
+        const status = getStatusFromCode(idOverride !== undefined ? idOverride : station.code);
 
         // Đổi màu theo trạng thái
         card.classList.remove("status-safe", "status-advisory", "status-warning", "status-critical");

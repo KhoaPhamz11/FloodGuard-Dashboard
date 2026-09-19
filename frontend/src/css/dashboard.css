@@ -70,19 +70,6 @@
 /* --- Forecast Card (placeholder) --- */
 .forecast-card { display: flex; flex-direction: column; }
 
-.forecast-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0 0 18px;
-    padding: 12px 14px;
-    color: #d7e4f5;
-    font-size: 12px;
-}
-
-.forecast-controls input,
-.forecast-controls select,
-.forecast-controls button,
 .nav-forecast-row select,
 .nav-forecast-row input {
     min-height: 32px;
@@ -93,28 +80,12 @@
     padding: 0 9px;
 }
 
-.forecast-controls span {
-    margin-left: auto;
-    color: #8fa6bd;
-}
-
 .nav-forecast-row {
     align-items: center;
 }
 
 .nav-forecast-row select {
     width: 92px;
-}
-
-@media (max-width: 760px) {
-    .forecast-controls {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .forecast-controls span {
-        margin-left: 0;
-    }
 }
 
 .forecast-placeholder {
@@ -520,11 +491,12 @@
 }
 
 .water-status-label {
-    font-family: 'Caveat', cursive;
-    font-size: 18px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
-    letter-spacing: 0.3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .water-status-badge {

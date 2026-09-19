@@ -34,3 +34,11 @@ async function fetchForecast({ latitude, longitude, at, horizons = [1, 3, 6, 24]
     if (!response.ok) throw new Error(`Forecast request failed: ${response.status}`);
     return response.json();
 }
+
+async function fetchStationForecasts({ at, horizon }) {
+    const params = new URLSearchParams({ horizon, source: "csv" });
+    if (at) params.set("at", at);
+    const response = await fetch(`/api/forecast/stations?${params}`);
+    if (!response.ok) throw new Error(`Station forecast request failed: ${response.status}`);
+    return response.json();
+}
