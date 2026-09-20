@@ -10,10 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- MapLibre GL CSS -->
     <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../src/css/style.css?v=18">
-    <link rel="stylesheet" href="../src/css/dashboard.css?v=18">
-    <link rel="stylesheet" href="../src/css/motion.css?v=18">
-    <link rel="stylesheet" href="../src/css/alert-center.css?v=18">
+    <link rel="stylesheet" href="../src/css/style.css?v=22">
+    <link rel="stylesheet" href="../src/css/dashboard.css?v=23">
+    <link rel="stylesheet" href="../src/css/motion.css?v=22">
+    <link rel="stylesheet" href="../src/css/alert-center.css?v=22">
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
     <!-- Turf.js for Geospatial Analysis -->
@@ -209,6 +209,14 @@
                                     <div class="nav-suggestions" id="nav-start-suggestions" style="display: none;"></div>
                                 </div>
                             </div>
+                            <div class="nav-input-row">
+                                <span class="nav-icon end-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></span>
+                                <div class="nav-input-wrapper" style="display: flex; gap: 8px;">
+                                    <input type="text" id="nav-end-input" class="nav-input" placeholder="Điểm đến..." autocomplete="off">
+                                    <button id="nav-submit-btn" class="nav-submit-btn" title="Tìm đường">➔</button>
+                                    <div class="nav-suggestions" id="nav-end-suggestions" style="display: none;"></div>
+                                </div>
+                            </div>
                             <div class="nav-input-row nav-forecast-row">
                                 <span class="nav-icon">◷</span>
                                 <input type="datetime-local" id="nav-departure-time" class="nav-input">
@@ -218,14 +226,6 @@
                                     <option value="6">6 giờ</option>
                                     <option value="24">24 giờ</option>
                                 </select>
-                            </div>
-                            <div class="nav-input-row">
-                                <span class="nav-icon end-icon"><svg class="feather" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></span>
-                                <div class="nav-input-wrapper" style="display: flex; gap: 8px;">
-                                    <input type="text" id="nav-end-input" class="nav-input" placeholder="Điểm đến..." autocomplete="off">
-                                    <button id="nav-submit-btn" class="nav-submit-btn" title="Tìm đường">➔</button>
-                                    <div class="nav-suggestions" id="nav-end-suggestions" style="display: none;"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
