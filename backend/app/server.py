@@ -153,7 +153,7 @@ def get_history_data(minutes: int = 360):
 def get_hourly_forecast(
     horizons: str = "1,3,6,24",
     at: Optional[str] = None,
-    source: str = "csv",
+    source: str = "mongo",
 ):
     try:
         requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
@@ -170,7 +170,7 @@ def get_forecast(
     longitude: float,
     at: Optional[str] = None,
     horizons: str = "1,3,6,24",
-    source: str = "csv",
+    source: str = "mongo",
 ):
     try:
         requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
@@ -184,6 +184,21 @@ def get_station_forecasts(at: Optional[str] = None, horizon: int = 24):
     if horizon not in {1, 3, 6, 24}:
         raise HTTPException(status_code=400, detail="horizon must be one of 1, 3, 6, 24")
     return predict_all_stations(at, horizon)
+
+@app.get("/api/start")
+def start_simulation(mode: str = "station-files"):
+    """Start the simulation with the specified mode."""
+    allowed = {"station-files", "csv", "mongo"}
+    if mode not in allowed:
+        raise HTTPException(status_code=400, detail="Invalid mode. Choose from station-files, csv, mongo")
+    script_path = os.path.abspath(os.path.join(BASE_DIR, "../../tests/mongoDB/publisher.py"))
+    import sys, subprocess
+    cmd = [sys.executable, script_path, "--mode", mode]
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return {"message": f"Simulation started in {mode} mode", "pid": proc.pid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Serve Frontend Static Files
 import os

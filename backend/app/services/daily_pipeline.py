@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from backend.app.services.feature_builder import build_daily_features
+from backend.app.services.model_data_store import load_model_csv
 
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
@@ -31,14 +32,14 @@ def _load_predictor_module():
 
 @lru_cache(maxsize=1)
 def _load_daily_frame() -> pd.DataFrame:
-    observations = pd.read_csv(DATA_DIR / "feature_matrix_external_clean.csv", low_memory=False)
+    observations = load_model_csv("feature_matrix_external_clean.csv")
     observations["ngay"] = pd.to_datetime(observations["ngay"], errors="raise")
     return build_daily_features(
         observations=observations,
-        rain=pd.read_csv(DATA_DIR / "rain_daily_station_obs.csv"),
-        tide=pd.read_csv(DATA_DIR / "tide_daily.csv"),
-        station=pd.read_csv(DATA_DIR / "stations_master_features.csv"),
-        weather=pd.read_csv(DATA_DIR / "historical_weather_features_openmeteo_bangkok.csv"),
+        rain=load_model_csv("rain_daily_station_obs.csv"),
+        tide=load_model_csv("tide_daily.csv"),
+        station=load_model_csv("stations_master_features.csv"),
+        weather=load_model_csv("historical_weather_features_openmeteo_bangkok.csv"),
     ).assign(
         ngay=observations.sort_values(["tenTram", "ngay"]).reset_index(drop=True)["ngay"],
         tenTram=observations.sort_values(["tenTram", "ngay"]).reset_index(drop=True)["tenTram"],
@@ -54,6 +55,12 @@ def predict_daily_station(station_name: str, at: str | None = None) -> dict:
         raise ValueError(f"No daily observation data for station: {station_name}")
     if at is not None:
         timestamp = pd.Timestamp(at).normalize()
+        available_dates = station_frame["ngay"].sort_values()
+        if timestamp < available_dates.iloc[0] or timestamp > available_dates.iloc[-1]:
+            raise ValueError(
+                f"Requested date {timestamp.date()} is outside the daily CSV range "
+                f"{available_dates.iloc[0].date()} to {available_dates.iloc[-1].date()}"
+            )
         station_frame = station_frame[station_frame["ngay"] <= timestamp]
     if station_frame.empty:
         raise ValueError(f"No daily row exists at or before {at} for {station_name}")

@@ -8,6 +8,7 @@ let currentDangerPolygons = null;
 let currentForecastRisk = 'safe';
 let currentForecastReady = false;
 let lastKnownFloodData = null;
+let navigationRiskMode = 'current';
 
 const FLOOD_ALERT_RADIUS_KM = 1; // Bán kính cảnh báo 1km
 const NAV_MAP_STYLE = {
@@ -192,9 +193,22 @@ function analyzeFloodRoute() {
     // Tạo LineString cho route hiện tại
     const routeLine = turf.lineString(routeCoords);
     
-    // Forecast là nguồn duy nhất quyết định màu tuyến. Chưa có dữ liệu => xanh an toàn.
+    let routeRisk = 'safe';
+    if (navigationRiskMode === 'current') {
+        const routeHits = (currentDangerPolygons?.features || []).filter(zone =>
+            turf.booleanIntersects(routeLine, zone)
+        );
+        const maxCode = routeHits.reduce(
+            (max, zone) => Math.max(max, Number(zone.properties?.riskLevel || 0)),
+            0
+        );
+        routeRisk = getStatusFromCode(maxCode);
+    } else if (currentForecastReady) {
+        routeRisk = currentForecastRisk;
+    }
+
     segments.push(turf.feature(routeLine.geometry, {
-        risk: currentForecastReady ? currentForecastRisk : 'safe'
+        risk: routeRisk
     }));
 
     const segmentedCollection = turf.featureCollection(segments);
@@ -341,31 +355,56 @@ async function fetchRoute() {
 }
 
 async function updateRouteForecast(routeFeature) {
-    const horizon = Number(document.getElementById("nav-forecast-horizon")?.value || 24);
-    const departure = document.getElementById("nav-departure-time")?.value || null;
-    const stationForecasts = await fetchStationForecasts({ at: departure, horizon });
-    applyForecastStationColors(stationForecasts.forecasts);
-    if (lastKnownFloodData?.stations_data) {
-        updateMapMarkers(lastKnownFloodData.stations_data);
-        if (typeof updateStationCards === 'function') {
-            updateStationCards(lastKnownFloodData.stations_data);
+    const applyCurrentRouteMode = (message) => {
+        navigationRiskMode = 'current';
+        if (riskModeInput) {
+            riskModeInput.checked = false;
         }
+        currentForecastReady = false;
+        currentForecastRisk = 'safe';
+        forecastStationOverrides = {};
+        if (lastKnownFloodData?.stations_data) {
+            updateMapMarkers(lastKnownFloodData.stations_data);
+            if (typeof updateStationCards === 'function') {
+                updateStationCards(lastKnownFloodData.stations_data);
+            }
+        }
+        const status = document.getElementById("nav-summary-status");
+        if (status) {
+            status.className = 'nav-summary-status advisory';
+            status.innerHTML = `<span class="nav-status-icon">ℹ</span> ${message}`;
+        }
+        analyzeFloodRoute();
+    };
+
+    if (navigationRiskMode === 'current') {
+        applyCurrentRouteMode('Đang dùng tình trạng ngập hiện tại từ hệ thống quan trắc.');
+        return;
     }
-    const cuchi = turf.point([106.512778, 10.955556]);
-    let nearest = routeFeature.geometry.coordinates[0];
-    let nearestDistance = Infinity;
-    routeFeature.geometry.coordinates.forEach(coord => {
-        const distance = turf.distance(cuchi, turf.point(coord), { units: "kilometers" });
-        if (distance < nearestDistance) {
-            nearest = coord;
-            nearestDistance = distance;
-        }
-    });
+
+    const horizon = 24;
     try {
+        const stationForecasts = await fetchStationForecasts({ horizon });
+        applyForecastStationColors(stationForecasts.forecasts);
+        if (lastKnownFloodData?.stations_data) {
+            updateMapMarkers(lastKnownFloodData.stations_data);
+            if (typeof updateStationCards === 'function') {
+                updateStationCards(lastKnownFloodData.stations_data);
+            }
+        }
+        const cuchi = turf.point([106.512778, 10.955556]);
+        let nearest = routeFeature.geometry.coordinates[0];
+        let nearestDistance = Infinity;
+        routeFeature.geometry.coordinates.forEach(coord => {
+            const distance = turf.distance(cuchi, turf.point(coord), { units: "kilometers" });
+            if (distance < nearestDistance) {
+                nearest = coord;
+                nearestDistance = distance;
+            }
+        });
         const result = await fetchForecast({
             latitude: nearest[1],
             longitude: nearest[0],
-            at: departure,
             horizons: [horizon]
         });
         const status = document.getElementById("nav-summary-status");
@@ -375,15 +414,13 @@ async function updateRouteForecast(routeFeature) {
         const forecastRisk = String(result.risk_level || 'SAFE').toUpperCase();
         currentForecastRisk = forecastRisk === 'SAFE' ? 'safe' : forecastRisk;
         if (result.model_status === "unavailable") {
-            currentForecastReady = false;
-            currentForecastRisk = 'safe';
+            applyCurrentRouteMode('Không có dữ liệu CSV cho mốc này; đang dùng tình trạng hiện tại.');
             return;
         }
         status.innerHTML = `<span class="nav-status-icon">✓</span> Đã phân loại màu trạm theo ${modelLabel}.`;
     } catch (error) {
         console.error("Route forecast error:", error);
-        currentForecastReady = false;
-        currentForecastRisk = 'safe';
+        applyCurrentRouteMode('Mốc thời gian ngoài dữ liệu dự báo; đang dùng tình trạng hiện tại.');
     }
 }
 
@@ -532,12 +569,21 @@ function updateMarkers() {
 }
 
 // 6. Gắn sự kiện UI
-const departureTimeInput = document.getElementById('nav-departure-time');
-if (departureTimeInput && !departureTimeInput.value) {
-    const now = new Date();
-    const pad = value => String(value).padStart(2, '0');
-    departureTimeInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-}
+const riskModeInput = document.getElementById('nav-risk-mode');
+const riskModeLabel = document.getElementById('nav-risk-mode-label');
+
+riskModeInput?.addEventListener('change', () => {
+    navigationRiskMode = riskModeInput.checked ? 'forecast' : 'current';
+    if (riskModeLabel) {
+        riskModeLabel.textContent = navigationRiskMode === 'forecast'
+            ? 'Dự báo AI (24 giờ)'
+            : 'Tình trạng hiện tại';
+    }
+    if (currentRouteGeoJSON) {
+        updateRouteForecast(currentRouteGeoJSON);
+        analyzeFloodRoute();
+    }
+});
 
 document.getElementById('nav-start-input').addEventListener('input', () => {
     handleGeocode('nav-start-input', 'nav-start-suggestions', (coords) => { currentStartCoords = coords; });
@@ -577,6 +623,3 @@ const observer = new MutationObserver((mutations) => {
     });
 });
 observer.observe(document.getElementById('layer-navigation'), { attributes: true, attributeFilter: ['class'] });
-
-
-

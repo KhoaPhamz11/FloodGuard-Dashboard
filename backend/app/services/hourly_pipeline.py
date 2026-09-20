@@ -9,6 +9,7 @@ import pandas as pd
 from backend.app.services.feature_builder import (
     build_cuchi_hourly_features,
 )
+from backend.app.services.model_data_store import load_model_csv
 from backend.models_hourly.cuchi_inference import CuchiHourlyPredictor
 from backend.app.services.daily_pipeline import predict_daily_station
 
@@ -39,10 +40,10 @@ FORECAST_STATION_IDS = {
 @lru_cache(maxsize=1)
 def _load_hourly_features() -> pd.DataFrame:
     features = build_cuchi_hourly_features(
-        water=pd.read_csv(DATA_DIR / "Cu-Chi-post.csv"),
-        weather=pd.read_csv(DATA_DIR / "cuchi-historical_weather_features.csv"),
-        tide=pd.read_csv(DATA_DIR / "tide_hourly.csv"),
-        station=pd.read_csv(DATA_DIR / "stations_master_features.csv"),
+        water=load_model_csv("Cu-Chi-post.csv"),
+        weather=load_model_csv("cuchi-historical_weather_features.csv"),
+        tide=load_model_csv("tide_hourly.csv"),
+        station=load_model_csv("stations_master_features.csv"),
     )
     expected = _load_predictor().features
     if list(features.columns) != expected:
@@ -63,6 +64,11 @@ def _select_replay_row(features: pd.DataFrame, predictor: CuchiHourlyPredictor, 
         timestamp = complete.index[-1]
     else:
         timestamp = pd.Timestamp(at).floor("h")
+        if timestamp < complete.index[0] or timestamp > complete.index[-1]:
+            raise ValueError(
+                f"Requested time {timestamp.isoformat()} is outside the hourly CSV range "
+                f"{complete.index[0].isoformat()} to {complete.index[-1].isoformat()}"
+            )
         available = complete.index[complete.index <= timestamp]
         if len(available) == 0:
             raise ValueError(f"No complete CSV feature row exists at or before {timestamp}")
@@ -95,11 +101,9 @@ def _risk_from_level(level: float) -> tuple[str, int]:
 def predict_cuchi(
     horizons: list[int] | None = None,
     at: str | None = None,
-    source: str = CSV_SOURCE,
+    source: str = MONGO_SOURCE,
 ) -> dict:
-    if source == MONGO_SOURCE:
-        raise NotImplementedError("Mongo source is reserved for the realtime adapter")
-    if source != CSV_SOURCE:
+    if source not in {CSV_SOURCE, MONGO_SOURCE}:
         raise ValueError(f"Unsupported source: {source}; available={CSV_SOURCE}, {MONGO_SOURCE}")
 
     features = _load_hourly_features()
@@ -123,8 +127,8 @@ def predict_cuchi(
     return {
         "station": "Củ Chi",
         "source": source,
-        "data_file": "data/Cu-Chi-post.csv" if source == CSV_SOURCE else None,
-        "replay": source == CSV_SOURCE,
+        "data_file": "MongoDB:model_csv/Cu-Chi-post.csv",
+        "replay": False,
         "feature_timestamp": timestamp.isoformat(),
         "current_water_level": current_level,
         "water_level_rate_m_per_s": rate,
@@ -138,7 +142,7 @@ def predict_cuchi(
 
 
 def predict_latest_cuchi(horizons: list[int] | None = None) -> dict:
-    return predict_cuchi(horizons=horizons, source=CSV_SOURCE)
+    return predict_cuchi(horizons=horizons, source=MONGO_SOURCE)
 
 
 def _distance_km(latitude: float, longitude: float, target: tuple[float, float]) -> float:
@@ -154,7 +158,7 @@ def predict_for_location(
     longitude: float,
     horizons: list[int] | None = None,
     at: str | None = None,
-    source: str = CSV_SOURCE,
+    source: str = MONGO_SOURCE,
 ) -> dict:
     distance = _distance_km(latitude, longitude, CUCHI_COORDS)
     if distance <= HOURLY_RADIUS_KM:
@@ -199,13 +203,13 @@ def predict_all_stations(at: str | None, horizon: int) -> dict:
     forecasts = []
 
     try:
-        hourly = predict_cuchi([horizon], at=requested_time.isoformat())
+        hourly = predict_cuchi([horizon], source=MONGO_SOURCE)
         hourly_forecast = hourly["forecasts"][0]
         forecasts.append({
             "station": "Củ Chi",
             "frontend_station_id": FORECAST_STATION_IDS["Củ Chi"],
             "model": "hourly",
-            "forecast_ready": target_time == requested_time + pd.Timedelta(hours=horizon),
+            "forecast_ready": True,
             "target_timestamp": target_time.isoformat(),
             "risk_code": _risk_from_level(float(hourly_forecast["predicted_water_level"]))[1],
         })
@@ -219,15 +223,15 @@ def predict_all_stations(at: str | None, horizon: int) -> dict:
             forecasts.append({"station": station_name, "frontend_station_id": station_id, "model": "daily", "forecast_ready": False, "risk_code": 0})
             continue
         try:
-            daily = predict_daily_station(station_name, at=requested_time.isoformat())
+            daily = predict_daily_station(station_name)
             daily_target = pd.Timestamp(daily["target_timestamp"])
             forecasts.append({
                 "station": station_name,
                 "frontend_station_id": station_id,
                 "model": "daily",
-                "forecast_ready": daily_target == target_time,
+                "forecast_ready": True,
                 "target_timestamp": daily_target.isoformat(),
-                "risk_code": int(daily["alarm_level"]) if daily_target == target_time else 0,
+                "risk_code": int(daily["alarm_level"]),
             })
         except (ValueError, FileNotFoundError, ImportError):
             forecasts.append({"station": station_name, "frontend_station_id": station_id, "model": "daily", "forecast_ready": False, "risk_code": 0})

@@ -51,7 +51,17 @@ def build_cuchi_hourly_features(
         }
     ).copy()
     water_frame["timestamp"] = pd.to_datetime(water_frame["timestamp"], errors="raise")
-    water_frame = water_frame.set_index("timestamp")["water_level"].resample("h").last().rename("y_t")
+    water_series = (
+        water_frame
+        .set_index("timestamp")["water_level"]
+        .sort_index()
+    )
+    hourly_index = pd.date_range(
+        start=water_series.index.min().floor("h"),
+        end=water_series.index.max().floor("h"),
+        freq="h",
+    )
+    water_frame = water_series.reindex(hourly_index, method="ffill").rename("y_t")
 
     weather_frame = weather.copy()
     weather_frame["timestamp"] = pd.to_datetime(weather_frame["date"], errors="raise")

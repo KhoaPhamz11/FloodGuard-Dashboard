@@ -6,13 +6,13 @@
 const STATION_LOCATIONS = [
     { id: 1, name: "station_1", district: "Quận 1",                  street: "Đinh Tiên Hoàng",               lat: 10.7880, lng: 106.7050 },
     { id: 2, name: "station_2", district: "Quận 2 (TP. Thủ Đức)",    street: "Nguyễn Duy Trinh",              lat: 10.7750, lng: 106.7650 },
-    { id: 3, name: "station_3", district: "Quận 3",                  street: "Trường Sa",                     lat: 10.7930, lng: 106.6870 },
+    { id: 3, name: "station_3", district: "Phú An",                     street: "Ven sông Sài Gòn, Phú An",         lat: 10.778611, lng: 106.707778 },
     { id: 4, name: "station_4", district: "Quận 5",                  street: "Trần Hưng Đạo – Trần Phú",     lat: 10.7550, lng: 106.6720 },
-    { id: 5, name: "station_5", district: "Quận 7",                  street: "Trần Xuân Soạn",                lat: 10.7350, lng: 106.7050 },
+    { id: 5, name: "station_5", district: "Nhà Bè",                     street: "Ven sông Nhà Bè",                 lat: 10.639444, lng: 106.734722 },
     { id: 6, name: "station_6", district: "Quận 10",                 street: "Đường 3 Tháng 2",               lat: 10.7720, lng: 106.6680 },
     { id: 7, name: "station_7", district: "Bình Thạnh",              street: "Nguyễn Hữu Cảnh",               lat: 10.7940, lng: 106.7180 },
-    { id: 8, name: "station_8", district: "Hóc Môn",                 street: "Ven sông Sài Gòn, xã Nhị Bình", lat: 10.8700, lng: 106.6950 },
-    { id: 9, name: "station_9", district: "Củ Chi",                  street: "Ven sông Sài Gòn, TT Củ Chi",   lat: 10.9750, lng: 106.4950 },
+    { id: 8, name: "station_8", district: "Hóc Môn",                    street: "Ven sông Sài Gòn, Hóc Môn",      lat: 10.888190, lng: 106.598219 },
+    { id: 9, name: "station_9", district: "Củ Chi",                     street: "Ven sông Sài Gòn, Củ Chi",        lat: 10.955556, lng: 106.512778 },
     { id: 10, name: "station_10", district: "Gò Vấp",                street: "Đường Quang Trung",             lat: 10.8250, lng: 106.6660 }
 ];
 
