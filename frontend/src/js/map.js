@@ -143,8 +143,8 @@ function createMarkersForMap(map, markersObj, prefix) {
             <div class="popup-district">📍 ${loc.street}, ${loc.district}</div>
             <div class="popup-status status-pill status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
             <div style="margin-top:6px;">
-                <span>Cao độ nền: <b id="popup-zstreet-${prefix}-${loc.id}">--</b> cm</span><br>
-                <span>Mực nước: <b id="popup-depth-${prefix}-${loc.id}">--</b> cm</span><br>
+                <span>Cao độ nền: <b id="popup-zstreet-${prefix}-${loc.id}">--</b> m</span><br>
+                <span>Mực nước ngập: <b id="popup-depth-${prefix}-${loc.id}">--</b> cm</span><br>
                 <span>Risk Score: <b id="popup-risk-${prefix}-${loc.id}">--</b></span>
             </div>
         `;

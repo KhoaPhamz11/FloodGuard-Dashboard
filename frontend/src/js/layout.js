@@ -262,7 +262,7 @@ function renderStationDetail(stationId) {
         { icon: "💧", label: "Mực nước ngập",  id: "detail-h",     unit: "cm" },
         { icon: "⬆️", label: "Tốc độ dâng",   id: "detail-v",     unit: "cm/phút" },
         { icon: "🌧️", label: "Lượng mưa",     id: "detail-r",     unit: "mm/phút" },
-        { icon: "🌊", label: "Thủy triều",    id: "detail-htide", unit: "cm" },
+        { icon: "🌊", label: "Thủy triều",    id: "detail-htide", unit: "m" },
         { icon: "🚰", label: "Thoát nước",    id: "detail-d",     unit: "mm/phút" },
         { icon: "⚡", label: "Risk Score",    id: "detail-risk",  unit: "" }
     ];
