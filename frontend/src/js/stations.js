@@ -10,8 +10,19 @@ const STATION_LOCATIONS = [
     { id: 4, name: "station_4", backend_name: "Lê Minh Xuân", district: "Lê Minh Xuân", street: "Lê Minh Xuân, Bình Chánh",  lat: 10.777222, lng: 106.537222, model: "daily"  },
     { id: 5, name: "station_5", backend_name: "Thủ Đức",     district: "Thủ Đức",      street: "Ven sông Sài Gòn, Thủ Đức",  lat: 10.844789, lng: 106.755827, model: "daily"  },
     { id: 6, name: "station_6", backend_name: "Củ Chi",      district: "Củ Chi",       street: "Ven sông Sài Gòn, Củ Chi",   lat: 10.955556, lng: 106.512778, model: "hourly" },
-    { id: 10, name: "station_10", backend_name: "Gò Vấp",      district: "Gò Vấp",       street: "Đường Quang Trung",          lat: 10.8250,   lng: 106.6660,   model: "daily"  },
+    { id: 7, name: "station_10", backend_name: "Gò Vấp",      district: "Gò Vấp",       street: "Đường Quang Trung",          lat: 10.8250,   lng: 106.6660,   model: "daily"  },
 ];
+
+const MONGO_NUM_TO_UI_ID = {
+    1: 1,   // station_1  → Nhà Bè
+    2: 5,   // station_2  → Thủ Đức
+    3: 2,   // station_3  → Phú An
+    4: 4,   // station_4  → Lê Minh Xuân
+    // 5, 6: không dùng UI
+    8: 3,   // station_8  → Hóc Môn
+    9: 6,   // station_9  → Củ Chi
+    10: 7,  // station_10 → Gò Vấp  ★
+};
 
 const STATION_COUNT = STATION_LOCATIONS.length; // 7
 
@@ -66,12 +77,26 @@ function createStationCards() {
 
 // Bóc số ID ra từ station_name "station_1" → 1
 function getStationNumericId(station) {
-    if (station.station_name) {
-        return parseInt(String(station.station_name).split("_")[1], 10);
-    }
+    if (!station) return null;
+
     if (station.frontend_station_id != null) {
         return Number(station.frontend_station_id);
     }
+
+    if (station.station_name) {
+        const m = String(station.station_name).match(/(\d+)/);
+        if (m) {
+            const mongoNum = parseInt(m[1], 10);
+            if (Object.prototype.hasOwnProperty.call(MONGO_NUM_TO_UI_ID, mongoNum)) {
+                return MONGO_NUM_TO_UI_ID[mongoNum];
+            }
+            // Chỉ nhận id trong UI (1..7)
+            if (mongoNum >= 1 && mongoNum <= 7) return mongoNum;
+            return null;
+        }
+    }
+
+    if (station.id != null) return Number(station.id);
     return null;
 }
 
