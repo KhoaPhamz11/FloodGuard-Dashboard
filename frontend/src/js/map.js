@@ -1,19 +1,16 @@
-// File: map.js — Module bản đồ MapLibre GL JS (MỚI trong V2)
-// Thay thế Leaflet bằng MapLibre WebGL để sửa lỗi "vệt trắng" và cải thiện độ mượt
-// Sử dụng bản đồ nền Esri Dark Gray (Không cần API Key)
+// File: map.js — Module bản đồ MapLibre GL JS
+// V3: Tô màu cả 2 mode (live code + forecast override); bỏ gate mapsInitialized khi update marker
 
-let mainMap = null;          
-let fullscreenMap = null;    
-let mainMarkers = {};        
+let mainMap = null;
+let fullscreenMap = null;
+let mainMarkers = {};
 let fullscreenMarkers = {};
 let mapsInitialized = false;
 
-// Trung tâm bản đồ: [Kinh độ (lng), Vĩ độ (lat)] (Ngược với Leaflet)
-const MAP_CENTER = [106.65, 10.82]; 
+const MAP_CENTER = [106.65, 10.82];
 const MAP_ZOOM_MAIN = 10;
 const MAP_ZOOM_FULL = 10;
 
-// Esri Dark Gray Raster Style (Không cần API Key)
 const MAP_STYLE = {
     "version": 8,
     "sources": {
@@ -50,7 +47,6 @@ const MAP_STYLE = {
     ]
 };
 
-// ===== KHỞI TẠO BẢN ĐỒ NHỎ (Layer 1) =====
 function initMaps() {
     const mainContainer = document.getElementById("main-map");
     if (!mainContainer || mainMap) return;
@@ -65,14 +61,13 @@ function initMaps() {
 
     mainMap.addControl(new maplibregl.NavigationControl(), 'top-right');
     createMarkersForMap(mainMap, mainMarkers, "main");
-    
+
     mainMap.on('load', () => {
         if (typeof createRadarLayersForMap === 'function') {
             createRadarLayersForMap(mainMap);
         }
     });
 
-    // Xử lý layout
     setTimeout(() => {
         if (mainMap) mainMap.resize();
     }, 500);
@@ -80,7 +75,6 @@ function initMaps() {
     mapsInitialized = true;
 }
 
-// ===== KHỞI TẠO BẢN ĐỒ LỚN (Layer 2) =====
 function initFullscreenMap() {
     const fullContainer = document.getElementById("fullscreen-map");
     if (!fullContainer) return;
@@ -96,7 +90,7 @@ function initFullscreenMap() {
 
         fullscreenMap.addControl(new maplibregl.NavigationControl(), 'top-right');
         createMarkersForMap(fullscreenMap, fullscreenMarkers, "full");
-        
+
         fullscreenMap.on('load', () => {
             if (typeof createRadarLayersForMap === 'function') {
                 createRadarLayersForMap(fullscreenMap);
@@ -109,12 +103,9 @@ function initFullscreenMap() {
     }, 250);
 }
 
-// ===== TẠO RADAR LAYERS =====
-// ===== KHỞI TẠO MARKERS & RADAR SCALE =====
 function getRadarRadiusPx(zoom) {
-    // 1 pixel ở vĩ độ 10.82 (HCM) = 153725 / 2^zoom (mét)
     const metersPerPixel = 153725 / Math.pow(2, zoom);
-    return (1000 / metersPerPixel) + "px"; // 1000m = 1km
+    return (1000 / metersPerPixel) + "px";
 }
 
 function updateMarkersZoom(map, markersObj) {
@@ -126,7 +117,6 @@ function updateMarkersZoom(map, markersObj) {
     });
 }
 
-// ===== TẠO MARKERS =====
 function createMarkersForMap(map, markersObj, prefix) {
     if (typeof STATION_LOCATIONS === "undefined") return;
 
@@ -158,26 +148,33 @@ function createMarkersForMap(map, markersObj, prefix) {
 
         markersObj[loc.id] = marker;
     });
-    
-    // Lắng nghe sự kiện zoom để cập nhật CSS radar-radius (1km)
+
     map.on('zoom', () => updateMarkersZoom(map, markersObj));
     updateMarkersZoom(map, markersObj);
 }
 
-// ===== CẬP NHẬT MÀU MARKER THEO STATUS =====
+// ===== MÀU MARKER: live code + forecast override =====
 let forecastStationOverrides = {};
 
+/** Mode AI: ghi risk_code theo frontend_station_id */
 function applyForecastStationColors(forecasts) {
     forecastStationOverrides = {};
     (forecasts || []).forEach(forecast => {
-        if (forecast.forecast_ready) {
-            forecastStationOverrides[forecast.frontend_station_id] = forecast.risk_code;
-        }
+        const id = forecast.frontend_station_id;
+        if (id == null) return;
+        if (forecast.forecast_ready === false) return;
+        forecastStationOverrides[Number(id)] = Number(forecast.risk_code ?? 0);
     });
 }
 
+/** Mode hiện tại: xóa override → dùng station.code */
+function clearForecastStationColors() {
+    forecastStationOverrides = {};
+}
+
 function updateMapMarkers(stationsData) {
-    if (!stationsData || !mapsInitialized) return;
+    if (!stationsData) return;
+    // Không phụ thuộc mapsInitialized — vẫn tô được marker nav
 
     const statusLabels = {
         SAFE: "An toàn",
@@ -187,11 +184,17 @@ function updateMapMarkers(stationsData) {
     };
 
     stationsData.forEach(station => {
-        const id = getStationNumericId(station);
+        const id = typeof getStationNumericId === "function"
+            ? getStationNumericId(station)
+            : null;
+        if (id == null || Number.isNaN(id)) return;
+
         const effectiveCode = Object.prototype.hasOwnProperty.call(forecastStationOverrides, id)
             ? forecastStationOverrides[id]
-            : station.code;
-        const status = getStatusFromCode(effectiveCode);
+            : Number(station.code ?? station.risk_code ?? 0);
+        const status = typeof getStatusFromCode === "function"
+            ? getStatusFromCode(effectiveCode)
+            : "SAFE";
         const markerClass = `marker-${status.toLowerCase()}`;
 
         ["main", "full", "nav"].forEach(prefix => {
@@ -205,20 +208,25 @@ function updateMapMarkers(stationsData) {
                 popupStatus.className = `popup-status status-pill status-${status.toLowerCase()}`;
                 popupStatus.textContent = statusLabels[status] || status;
             }
-            
+
             const popupZStreet = document.getElementById(`popup-zstreet-${prefix}-${id}`);
-            if (popupZStreet && station.Z_street !== undefined) popupZStreet.textContent = Number(station.Z_street).toFixed(2);
-            
+            if (popupZStreet && station.Z_street !== undefined) {
+                popupZStreet.textContent = Number(station.Z_street).toFixed(2);
+            }
+
             const popupDepth = document.getElementById(`popup-depth-${prefix}-${id}`);
-            if (popupDepth) popupDepth.textContent = Number(station.H).toFixed(2);
+            if (popupDepth) {
+                popupDepth.textContent = Number(station.H ?? 0).toFixed(2);
+            }
 
             const popupRisk = document.getElementById(`popup-risk-${prefix}-${id}`);
-            if (popupRisk) popupRisk.textContent = Number(station.S_risk).toFixed(2);
+            if (popupRisk) {
+                popupRisk.textContent = Number(station.S_risk ?? 0).toFixed(2);
+            }
         });
     });
 }
 
-// ===== REFRESH MAP SIZE =====
 function refreshMapSize(mapName) {
     if (mapName === "main" && mainMap) {
         setTimeout(() => mainMap.resize(), 250);
