@@ -44,18 +44,25 @@ def build_cuchi_hourly_features(
     start: str | pd.Timestamp | None = None,
     end: str | pd.Timestamp | None = None,
 ) -> pd.DataFrame:
-    water_frame = water.rename(
-        columns={
-            "Date Time, GMT+07:00": "timestamp",
-            "Water Level, meters": "water_level",
-        }
-    ).copy()
+    # ------------------------------------------------------------------
+    # 1. Chuẩn hóa dữ liệu mực nước (Hỗ trợ cả MongoDB & CSV)
+    # ------------------------------------------------------------------
+    water_frame = water.copy()
+    water_cols_map = {
+        "Date Time, GMT+07:00": "timestamp",
+        "Water Level, meters": "water_level",
+    }
+    water_frame = water_frame.rename(columns={k: v for k, v in water_cols_map.items() if k in water_frame.columns})
+    
     water_frame["timestamp"] = pd.to_datetime(water_frame["timestamp"], errors="raise")
     water_series = (
         water_frame
         .set_index("timestamp")["water_level"]
         .sort_index()
     )
+    # Loại bỏ bản ghi trùng mốc giờ nếu có
+    water_series = water_series[~water_series.index.duplicated(keep="last")]
+
     hourly_index = pd.date_range(
         start=water_series.index.min().floor("h"),
         end=water_series.index.max().floor("h"),
@@ -63,19 +70,38 @@ def build_cuchi_hourly_features(
     )
     water_frame = water_series.reindex(hourly_index, method="ffill").rename("y_t")
 
+    # ------------------------------------------------------------------
+    # 2. Chuẩn hóa dữ liệu thời tiết (Hỗ trợ Open-Meteo & CSV)
+    # ------------------------------------------------------------------
     weather_frame = weather.copy()
-    weather_frame["timestamp"] = pd.to_datetime(weather_frame["date"], errors="raise")
+    date_col = "date" if "date" in weather_frame.columns else "timestamp"
+    weather_frame["timestamp"] = pd.to_datetime(weather_frame[date_col], errors="raise")
     weather_frame = weather_frame.set_index("timestamp")
+    weather_frame = weather_frame[~weather_frame.index.duplicated(keep="last")]
 
-    tide_frame = tide.rename(columns={"datetime_nhabe": "timestamp"}).copy()
+    # ------------------------------------------------------------------
+    # 3. Chuẩn hóa dữ liệu thủy triều
+    # ------------------------------------------------------------------
+    tide_frame = tide.copy()
+    if "datetime_nhabe" in tide_frame.columns:
+        tide_frame = tide_frame.rename(columns={"datetime_nhabe": "timestamp"})
+    elif "date" in tide_frame.columns and "timestamp" not in tide_frame.columns:
+        tide_frame = tide_frame.rename(columns={"date": "timestamp"})
+
     tide_frame["timestamp"] = pd.to_datetime(tide_frame["timestamp"], errors="raise")
     tide_frame = tide_frame.set_index("timestamp")["tide_vungtau_m"].resample("h").mean()
     tide_frame.name = "tide_vungtau_m"
 
+    # ------------------------------------------------------------------
+    # 4. Merge các bảng dữ liệu
+    # ------------------------------------------------------------------
     index = _hourly_index(pd.Series(water_frame.index))
     frame = pd.DataFrame(index=index)
     frame["y_t"] = water_frame.reindex(index)
     frame = frame.join(weather_frame, how="left").join(tide_frame, how="left")
+
+    # Nội suy làm đầy nếu có khoảng trống nhỏ ở thủy triều / thời tiết
+    frame["tide_vungtau_m"] = frame["tide_vungtau_m"].ffill().bfill()
 
     weather_columns = {
         "Tram_Cu_Chi_precipitation": "Tram_Cu_Chi_precipitation",
@@ -89,6 +115,9 @@ def build_cuchi_hourly_features(
     if missing_weather:
         raise ValueError(f"Weather source is missing columns: {missing_weather}")
 
+    # ------------------------------------------------------------------
+    # 5. Tính toán các thuộc tính thời gian, Lag & Rolling
+    # ------------------------------------------------------------------
     frame["hour"] = frame.index.hour
     frame["hour_sin"] = np.sin(2 * np.pi * frame["hour"] / 24)
     frame["hour_cos"] = np.cos(2 * np.pi * frame["hour"] / 24)
