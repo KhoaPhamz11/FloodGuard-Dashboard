@@ -152,14 +152,25 @@ def fetch_hybrid_scenario_daily_features(
         "rain_mean3": [r_scenario] * days_back,
         "rain_mean7": [r_scenario] * days_back,
     })
-    weather_df = pd.DataFrame({
-        "ngay": dates,
-        "st_Cu_Chi_precipitation": [r_scenario] * days_back,
-        "st_Cu_Chi_wind_gusts_10m": [15.0] * days_back,
-        "st_Cu_Chi_pressure_msl": [1010.0] * days_back,
-        "dam_Tri_An_precipitation": [r_scenario] * days_back,
-        "dam_Dau_Tieng_precipitation": [r_scenario] * days_back,
-    })
+    # Raw weather columns for the daily model builder.
+    # The daily feature schema expects 6 station/dam sources (st_Nha_Be,
+    # st_Phu_An, st_Hoc_Mon, st_Thu_Duc, dam_Tri_An, dam_Dau_Tieng) each with
+    # precipitation/rain/wind_speed_10m/wind_gusts_10m/pressure_msl.
+    # prepare_daily_weather renames Tram_* -> st_* and Dap_* -> dam_* before
+    # generating lag/sum3 features and raising on missing columns.
+    WEATHER_SOURCES = [
+        "Dap_Tri_An","Dap_Dau_Tieng",
+        "Tram_Nha_Be","Tram_Phu_An",
+        "Tram_Hoc_Mon","Tram_Thu_Duc",
+    ]
+    weather_data: dict[str, list[float]] = {"ngay": dates}
+    for src in WEATHER_SOURCES:
+        weather_data[f"{src}_precipitation"] = [r_scenario] * days_back
+        weather_data[f"{src}_rain"] = [r_scenario] * days_back
+        weather_data[f"{src}_wind_speed_10m"] = [10.0] * days_back
+        weather_data[f"{src}_wind_gusts_10m"] = [15.0] * days_back
+        weather_data[f"{src}_pressure_msl"] = [1010.0] * days_back
+    weather_df = pd.DataFrame(weather_data)
     tide_df = pd.DataFrame({
         "date": dates,
         "tide_max": [tide_scenario] * days_back,

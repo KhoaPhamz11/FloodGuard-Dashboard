@@ -38,11 +38,12 @@ except ImportError:
 
 
 # ----- Điểm mẫu trong TP.HCM (gần trung tâm, dễ có route) -----
-SAMPLE_START_TEXT = "duong ton duc thang"
-SAMPLE_END_TEXT = "duong ham nghi"
-# Fallback tọa độ nếu geocode fail (lng, lat) — gần Q1
-FALLBACK_START = [106.7065, 10.7770]
-FALLBACK_END = [106.7020, 10.7715]
+SAMPLE_START_TEXT = "Dinh Doc Lap"
+SAMPLE_END_TEXT = "Landmark 81"
+
+# Fallback tọa độ nếu geocode fail (lng, lat)
+FALLBACK_START = [106.6953, 10.7770]  # Dinh Độc Lập
+FALLBACK_END = [106.7217, 10.7950]    # Landmark 81
 
 
 class Result:

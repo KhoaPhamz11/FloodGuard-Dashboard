@@ -38,7 +38,7 @@ db = client["flood_monitoring"]
 collection = db["sensor_data"]
 
 # OpenRouteService Configuration
-ORS_API_KEY = os.getenv("ORS_API_KEY")
+ORS_API_KEY = os.getenv("ORS_API_KEY_3")
 ORS_BASE_URL = "https://api.openrouteservice.org"
 
 from typing import Optional, Dict, Any
@@ -54,7 +54,7 @@ def debug_env():
     return {
         "env_path": env_path,
         "env_exists": os.path.exists(env_path),
-        "key": os.getenv("ORS_API_KEY")
+        "key": os.getenv("ORS_API_KEY_3")
     }
 
 @app.get("/api/navigation/geocode")
@@ -63,7 +63,7 @@ def geocode_search(text: str):
     API tìm kiếm địa điểm (Geocoding) thông qua OpenRouteService.
     Ẩn API Key khỏi frontend.
     """
-    current_key = os.getenv("ORS_API_KEY")
+    current_key = os.getenv("ORS_API_KEY_3")
     if not current_key or current_key == "your_openrouteservice_api_key_here":
         raise HTTPException(status_code=500, detail="Chưa cấu hình ORS_API_KEY trong backend .env")
     
@@ -89,7 +89,7 @@ def get_driving_route(request: RouteRequest):
     """
     API tìm đường đi ngắn nhất (Routing) thông qua OpenRouteService.
     """
-    current_key = os.getenv("ORS_API_KEY")
+    current_key = os.getenv("ORS_API_KEY_3")
     if not current_key or current_key == "your_openrouteservice_api_key_here":
         raise HTTPException(status_code=500, detail="Chưa cấu hình ORS_API_KEY trong backend .env")
         
@@ -109,11 +109,23 @@ def get_driving_route(request: RouteRequest):
         }
     
     try:
-        response = requests.post(url, json=body, headers=headers, timeout=10)
-        response.raise_for_status()
+        response = requests.post(url, json=body, headers=headers, timeout=30)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            detail = f"Lỗi ORS routing (HTTP {response.status_code}): {response.text[:500]}"
+            raise HTTPException(status_code=response.status_code, detail=detail)
         return response.json()
+    except HTTPException:
+        raise
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi gọi ORS Routing: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Không kết nối được ORS (có thể ORS/key hạn chế hoặc mạng): "
+                f"{str(e)}"
+            ),
+        )
 
 
 
