@@ -21,3 +21,23 @@ async function fetchHistoryData(minutes = 360) { // Hàm lấy dữ liệu lịc
         return null;
     }
 }
+
+async function fetchForecast({ latitude, longitude, at, horizons = [1, 3, 6, 24] }) {
+    const params = new URLSearchParams({
+        latitude,
+        longitude,
+        horizons: horizons.join(","),
+        source: "mongo"
+    });
+    if (at) params.set("at", at);
+    const response = await fetch(`/api/forecast?${params}`);
+    if (!response.ok) throw new Error(`Forecast request failed: ${response.status}`);
+    return response.json();
+}
+
+async function fetchStationForecasts({ at, horizon }) {
+    const params = new URLSearchParams({ horizon, source: "mongo" });
+    const response = await fetch(`/api/forecast/stations?${params}`);
+    if (!response.ok) throw new Error(`Station forecast request failed: ${response.status}`);
+    return response.json();
+}

@@ -1,125 +1,125 @@
-// File: stations.js — Quản lý dữ liệu 9 trạm quan trắc
-// Đọc dữ liệu của 9 trạm, đưa các con số lên 9 ô, đổi màu theo cảnh báo.
-// V2: Thêm STATION_LOCATIONS cho bản đồ Leaflet.
-
-// ===== DỮ LIỆU VỊ TRÍ 9 TRẠM (toạ độ thật tại TP.HCM) =====
+// File: stations.js — 7 trạm thật. Củ Chi CHỈ từ station_9.
 const STATION_LOCATIONS = [
-    { id: 1, name: "station_1", district: "Quận 1",                  street: "Đinh Tiên Hoàng",               lat: 10.7880, lng: 106.7050 },
-    { id: 2, name: "station_2", district: "Quận 2 (TP. Thủ Đức)",    street: "Nguyễn Duy Trinh",              lat: 10.7750, lng: 106.7650 },
-    { id: 3, name: "station_3", district: "Quận 3",                  street: "Trường Sa",                     lat: 10.7930, lng: 106.6870 },
-    { id: 4, name: "station_4", district: "Quận 5",                  street: "Trần Hưng Đạo – Trần Phú",     lat: 10.7550, lng: 106.6720 },
-    { id: 5, name: "station_5", district: "Quận 7",                  street: "Trần Xuân Soạn",                lat: 10.7350, lng: 106.7050 },
-    { id: 6, name: "station_6", district: "Quận 10",                 street: "Đường 3 Tháng 2",               lat: 10.7720, lng: 106.6680 },
-    { id: 7, name: "station_7", district: "Bình Thạnh",              street: "Nguyễn Hữu Cảnh",               lat: 10.7940, lng: 106.7180 },
-    { id: 8, name: "station_8", district: "Hóc Môn",                 street: "Ven sông Sài Gòn, xã Nhị Bình", lat: 10.8700, lng: 106.6950 },
-    { id: 9, name: "station_9", district: "Củ Chi",                  street: "Ven sông Sài Gòn, TT Củ Chi",   lat: 10.9750, lng: 106.4950 }
+    { id: 1, name: "station_1", backend_name: "Nhà Bè",      district: "Nhà Bè",       street: "Ven sông Nhà Bè",            lat: 10.639444, lng: 106.734722, model: "daily"  },
+    { id: 2, name: "station_3", backend_name: "Phú An",      district: "Phú An",       street: "Ven sông Sài Gòn, Phú An",   lat: 10.778611, lng: 106.707778, model: "daily"  },
+    { id: 3, name: "station_8", backend_name: "Hóc Môn",     district: "Hóc Môn",      street: "Ven sông Sài Gòn, Hóc Môn",  lat: 10.888190, lng: 106.598219, model: "daily"  },
+    { id: 4, name: "station_4", backend_name: "Lê Minh Xuân", district: "Lê Minh Xuân", street: "Lê Minh Xuân, Bình Chánh",  lat: 10.777222, lng: 106.537222, model: "daily"  },
+    { id: 5, name: "station_2", backend_name: "Thủ Đức",     district: "Thủ Đức",      street: "Ven sông Sài Gòn, Thủ Đức",  lat: 10.844789, lng: 106.755827, model: "daily"  },
+    { id: 6, name: "station_9", backend_name: "Củ Chi",      district: "Củ Chi",       street: "Ven sông Sài Gòn, Củ Chi",   lat: 10.955556, lng: 106.512778, model: "hourly" },
+    { id: 7, name: "station_10", backend_name: "Gò Vấp",      district: "Gò Vấp",       street: "Đường Quang Trung",          lat: 10.8250,   lng: 106.6660,   model: "daily"  },
 ];
 
-// Lấy tên hiển thị đẹp cho trạm (ví dụ: "Trạm Quận 1")
+// station_6 KHÔNG map — Củ Chi chỉ station_9
+const MONGO_NUM_TO_UI_ID = {
+    1: 1, 2: 5, 3: 2, 4: 4,
+    8: 3, 9: 6, 10: 7,
+};
+
+const STATION_COUNT = STATION_LOCATIONS.length;
+
 function getStationDisplayName(stationId) {
     const loc = STATION_LOCATIONS.find(s => s.id === stationId);
-    if (!loc) return `Trạm ${stationId}`;
-    return `Trạm ${loc.district}`;
+    return loc ? `Trạm ${loc.district}` : `Trạm ${stationId}`;
 }
 
-// Lấy object vị trí đầy đủ của trạm (dùng bởi map.js, notification.js)
 function getStationLocation(stationId) {
     return STATION_LOCATIONS.find(s => s.id === stationId) || null;
 }
 
+function getBackendName(stationId) {
+    const loc = getStationLocation(stationId);
+    return loc ? loc.backend_name : null;
+}
 
-// ===== CÁC HÀM CŨ (giữ nguyên 100%) =====
+let currentSelectedStationId = 1;
 
-let currentSelectedStationId = 1;  // Mặc định mở web lên là trạm 1
-
-// TẠO SẴN KHUNG HTML CHO 9 Ô TRẠM (gọi 1 lần lúc khởi động)
 function createStationCards() {
     const grid = document.getElementById("stationsGrid");
     if (!grid) return;
-
-    for (let i = 1; i <= 9; i++) {
+    grid.innerHTML = "";
+    for (let i = 1; i <= STATION_COUNT; i++) {
         const card = document.createElement("div");
         card.className = "station-card";
         card.id = `station-card-${i}`;
-
-        // V2: Dùng tên quận thay vì "Trạm 1"
-        const displayName = getStationDisplayName(i);
-
         card.innerHTML = `
-            <div class="station-name">${displayName}</div>
+            <div class="station-name">${getStationDisplayName(i)}</div>
             <div class="station-depth">Độ sâu: <span id="depth-val-${i}">--</span> cm</div>
             <div class="station-rate">Tốc độ dâng: <span id="rate-val-${i}">--</span> cm/phút</div>
             <div class="station-risk" id="risk-val-${i}">--</div>
             <div class="station-status-text">Đang chờ dữ liệu...</div>
         `;
-
         grid.appendChild(card);
     }
 }
 
-// Bóc số ID ra từ station_name "station_1" → 1
+/** station_9 → 6; station_6 → null (bỏ). frontend_station_id = UI id 1..7 */
 function getStationNumericId(station) {
-    return parseInt(station.station_name.split("_")[1], 10);
+    if (!station) return null;
+    if (station.frontend_station_id != null) {
+        const n = Number(station.frontend_station_id);
+        if (!Number.isNaN(n) && n >= 1 && n <= STATION_COUNT) return n;
+    }
+    if (station.station_name) {
+        const m = String(station.station_name).match(/(\d+)/);
+        if (m) {
+            const mongoNum = parseInt(m[1], 10);
+            if (Object.prototype.hasOwnProperty.call(MONGO_NUM_TO_UI_ID, mongoNum)) {
+                return MONGO_NUM_TO_UI_ID[mongoNum];
+            }
+            return null; // station_6, station_5 → bỏ
+        }
+    }
+    if (station.id != null) {
+        const n = Number(station.id);
+        if (!Number.isNaN(n) && n >= 1 && n <= STATION_COUNT) return n;
+    }
+    if (station.backend_name || station.station) {
+        const name = station.backend_name || station.station;
+        const loc = STATION_LOCATIONS.find(s => s.backend_name === name || s.district === name);
+        if (loc) return loc.id;
+    }
+    return null;
 }
 
-// Dịch code số (0,1,2,3) sang tên trạng thái CSS
-// QUY ƯỚC: 0 = An toàn, 1 = Cảnh báo nhẹ, 2 = Cảnh báo, 3 = Nguy hiểm
 function getStatusFromCode(code) {
     const map = { 0: "SAFE", 1: "ADVISORY", 2: "WARNING", 3: "CRITICAL" };
     return map[code] !== undefined ? map[code] : "SAFE";
 }
 
-// CẬP NHẬT SỐ LIỆU VÀ MÀU SẮC 9 Ô (gọi mỗi giây từ app.js)
 function updateStationCards(stationsData) {
+    if (!Array.isArray(stationsData)) return;
     stationsData.forEach(station => {
         const id = getStationNumericId(station);
+        if (id == null || id < 1 || id > STATION_COUNT) return;
         const card = document.getElementById(`station-card-${id}`);
+        if (!card) return;
         const depthVal = document.getElementById(`depth-val-${id}`);
         const rateVal = document.getElementById(`rate-val-${id}`);
         const riskVal = document.getElementById(`risk-val-${id}`);
-        if (!card) return;
-
-        if (depthVal) depthVal.textContent = Number(station.H).toFixed(2);
-        if (rateVal)  rateVal.textContent  = Number(station.V).toFixed(2);
-        if (riskVal)  riskVal.textContent  = Number(station.S_risk).toFixed(2);
-
-        const status = getStatusFromCode(station.code);
-
-        // Đổi màu theo trạng thái
+        if (depthVal) depthVal.textContent = Number(station.H ?? 0).toFixed(2);
+        if (rateVal) rateVal.textContent = Number(station.V ?? 0).toFixed(2);
+        if (riskVal) riskVal.textContent = Number(station.S_risk ?? 0).toFixed(2);
+        // Cards luôn live — không forecast override
+        const status = getStatusFromCode(station.code ?? 0);
         card.classList.remove("status-safe", "status-advisory", "status-warning", "status-critical");
-        if (status === "SAFE")          card.classList.add("status-safe");
-        else if (status === "ADVISORY") card.classList.add("status-advisory");
-        else if (status === "WARNING")  card.classList.add("status-warning");
-        else if (status === "CRITICAL") card.classList.add("status-critical");
-
-        // Cập nhật text trạng thái
+        card.classList.add(`status-${status.toLowerCase()}`);
         const statusText = card.querySelector(".station-status-text");
         if (statusText) statusText.textContent = station.description || status;
     });
 }
 
-// LẮNG NGHE SỰ KIỆN CLICK CHUỘT trên 9 card (gọi 1 lần lúc init)
 function initStationClickEvents() {
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= STATION_COUNT; i++) {
         const card = document.getElementById(`station-card-${i}`);
-        if (card) {
-            card.addEventListener("click", () => {
-                selectStation(i);
-            });
-        }
+        if (card) card.addEventListener("click", () => selectStation(i));
     }
 }
 
-// XỬ LÝ KHI NGƯỜI DÙNG CHỌN 1 TRẠM
 function selectStation(stationId) {
+    if (stationId < 1 || stationId > STATION_COUNT) return;
     currentSelectedStationId = stationId;
-
-    // Gỡ viền sáng cũ
-    for (let i = 1; i <= 9; i++) {
-        const card = document.getElementById(`station-card-${i}`);
-        if (card) card.classList.remove("station-selected");
+    for (let i = 1; i <= STATION_COUNT; i++) {
+        document.getElementById(`station-card-${i}`)?.classList.remove("station-selected");
     }
-    // Gắn viền sáng mới
-    const selectedCard = document.getElementById(`station-card-${stationId}`);
-    if (selectedCard) selectedCard.classList.add("station-selected");
+    document.getElementById(`station-card-${stationId}`)?.classList.add("station-selected");
 }

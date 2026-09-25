@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from backend.app.services.hourly_pipeline import predict_cuchi, predict_for_location, predict_all_stations
 
 # Xác định đường dẫn file .env một cách tuyệt đối (nằm ở thư mục backend/)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -108,11 +109,23 @@ def get_driving_route(request: RouteRequest):
         }
     
     try:
-        response = requests.post(url, json=body, headers=headers, timeout=10)
-        response.raise_for_status()
+        response = requests.post(url, json=body, headers=headers, timeout=30)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            detail = f"Lỗi ORS routing (HTTP {response.status_code}): {response.text[:500]}"
+            raise HTTPException(status_code=response.status_code, detail=detail)
         return response.json()
+    except HTTPException:
+        raise
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi gọi ORS Routing: {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Không kết nối được ORS (có thể ORS/key hạn chế hoặc mạng): "
+                f"{str(e)}"
+            ),
+        )
 
 
 
@@ -146,6 +159,58 @@ def get_history_data(minutes: int = 360):
         r["_id"] = str(r["_id"])
     records.reverse()   # Vì lấy giảm dần (mới nhất đứng đầu 360,359,358..), ta cần đảo ngược list lại (reverse) để khi Frontend vẽ biểu đồ Chart.js, thời gian sẽ chạy từ trái (cũ) sang phải (mới)
     return records
+
+
+@app.get("/api/hourly-forecast")
+def get_hourly_forecast(
+    horizons: str = "1,3,6,24",
+    at: Optional[str] = None,
+    source: str = "mongo",
+):
+    try:
+        requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
+        if not requested:
+            raise ValueError("At least one horizon is required")
+        return predict_cuchi(requested, at=at, source=source)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/forecast")
+def get_forecast(
+    latitude: float,
+    longitude: float,
+    at: Optional[str] = None,
+    horizons: str = "1,3,6,24",
+    source: str = "mongo",
+):
+    try:
+        requested = [int(value.strip()) for value in horizons.split(",") if value.strip()]
+        return predict_for_location(latitude, longitude, requested, at=at, source=source)
+    except (ValueError, NotImplementedError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/forecast/stations")
+def get_station_forecasts(at: Optional[str] = None, horizon: int = 24):
+    if horizon not in {1, 3, 6, 24}:
+        raise HTTPException(status_code=400, detail="horizon must be one of 1, 3, 6, 24")
+    return predict_all_stations(at, horizon)
+
+@app.get("/api/start")
+def start_simulation(mode: str = "station-files"):
+    """Start the simulation with the specified mode."""
+    allowed = {"station-files", "csv", "mongo"}
+    if mode not in allowed:
+        raise HTTPException(status_code=400, detail="Invalid mode. Choose from station-files, csv, mongo")
+    script_path = os.path.abspath(os.path.join(BASE_DIR, "../../tests/mongoDB/publisher.py"))
+    import sys, subprocess
+    cmd = [sys.executable, script_path, "--mode", mode]
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return {"message": f"Simulation started in {mode} mode", "pid": proc.pid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Serve Frontend Static Files
 import os

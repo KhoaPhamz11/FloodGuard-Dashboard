@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fit Banner Panel - FloodGuard</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            gap: 20px;
+            padding: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* KHUNG PANEL CHÍNH TƯƠNG TỰ FLOODGUARD */
+        .navigation-summary-panel {
+            width: 310px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            color: #fff;
+            /* CẤU HÌNH FIT KHÔNG CUỘN */
+            height: auto !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-summary-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 9px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .nav-summary-status {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CASE 1: CẢNH BÁO MỨC 1 -->
+    <div class="navigation-summary-panel">
+        <div class="nav-summary-metrics">
+            <div class="metric-item">
+                <span class="metric-label">Khoảng cách</span>
+                <span class="metric-value">4.8 km</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Thời gian</span>
+                <span class="metric-value">7 phút</span>
+            </div>
+        </div>
+        <div id="status-container-1" class="nav-summary-status"></div>
+    </div>
+
+    <!-- CASE 2: CẢNH BÁO NGUY HIỂM / TRÁNH NGẬP -->
+    <div class="navigation-summary-panel">
+        <div class="nav-summary-metrics">
+            <div class="metric-item">
+                <span class="metric-label">Khoảng cách</span>
+                <span class="metric-value">5.2 km</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Thời gian</span>
+                <span class="metric-value">11 phút</span>
+            </div>
+        </div>
+        <div id="status-container-2" class="nav-summary-status"></div>
+    </div>
+
+    <script>
+        // Hàm dựng UI Banner đã tối ưu kích thước
+        function getAlertBannerUI(type, title, subtitle = '', stationInfo = null) {
+            let accent = '';
+            let icon = '';
+
+            switch (type) {
+                case 'safe':
+                    accent = '#10b981';
+                    icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+                    break;
+                case 'advisory':
+                    accent = '#f59e0b';
+                    icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+                    break;
+                case 'danger':
+                    accent = '#ef4444';
+                    icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+                    break;
+                case 'rerouted':
+                    accent = '#3b82f6';
+                    icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
+                    break;
+            }
+
+            let forecastHtml = '';
+            if (stationInfo) {
+                forecastHtml = `
+                <div class="nav-ai-card" style="width:100%; padding:8px 10px; border-radius:8px; background:rgba(15,23,42,0.95); border:1px solid ${stationInfo.color}40; box-sizing:border-box;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
+                    <div style="min-width:0; flex:1; overflow:hidden;">
+                      <div style="font-size:9px; color:#94a3b8; letter-spacing:0.2px; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${stationInfo.subtitle}
+                      </div>
+                      <div style="font-size:13px; font-weight:700; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${stationInfo.name}
+                      </div>
+                    </div>
+                    <span style="flex-shrink:0; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; color:${stationInfo.color}; background:${stationInfo.color}20; border:1px solid ${stationInfo.color}50; white-space:nowrap;">
+                      ${stationInfo.riskText}
+                    </span>
+                  </div>
+                  <div style="padding:6px 8px; border-radius:6px; background:rgba(30,41,59,0.7); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                    <span style="font-size:11px; color:#94a3b8; white-space:nowrap;">Mực ngập</span>
+                    <span style="font-size:15px; font-weight:700; color:#f8fafc; white-space:nowrap;">
+                      ${stationInfo.water}<span style="font-size:10px; color:#64748b; font-weight:500; margin-left:3px;">cm</span>
+                    </span>
+                  </div>
+                </div>`;
+            }
+
+            return `
+            <div style="position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,1)); border: 1px solid rgba(255,255,255,0.06); border-left: 3px solid ${accent}; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; width: 100%; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                <div style="position: absolute; top: -10px; right: -10px; width: 45px; height: 45px; background: ${accent}; filter: blur(25px); opacity: 0.15; border-radius: 50%; pointer-events: none;"></div>
+                <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 1;">
+                    <div style="color: ${accent}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${icon}
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;">
+                        <div style="font-size: 11px; font-weight: 700; color: #f8fafc; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</div>
+                        ${subtitle ? `<div style="font-size: 11px; color: #cbd5e1; line-height: 1.3; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${subtitle}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+            ${forecastHtml}
+            `;
+        }
+
+        // Render Test Case 1
+        document.getElementById('status-container-1').innerHTML = getAlertBannerUI(
+            'advisory',
+            'Cảnh báo ngập mức 1',
+            'Đường có thể đọng nước, chú ý quan sát.',
+            { subtitle: 'Trạm gần tuyến · Live · 0.2 km', name: 'Gò Vấp', riskText: 'Ngập mức 1', color: '#f59e0b', water: '20' }
+        );
+
+        // Render Test Case 2
+        document.getElementById('status-container-2').innerHTML = getAlertBannerUI(
+            'rerouted',
+            'Đã tránh điểm ngập',
+            'Tuyến thay thế dài 5.2 km (11 phút).',
+            { subtitle: 'Trạm gần tuyến · AI 24h · 0.1 km', name: 'An Lạc', riskText: 'Ngập mức 3', color: '#ef4444', water: '45' }
+        );
+    </script>
+</body>
+</html>

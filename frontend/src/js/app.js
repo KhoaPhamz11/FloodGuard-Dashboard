@@ -12,7 +12,7 @@ function generateMockData() {
     });
 
     const stations = [];
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 10; i++) {
         // Tạo data ngẫu nhiên nhẹ để mô phỏng realtime
         const seed = Math.sin(now.getTime() / 1000 + i) * 0.5 + 0.5;
         const code = seed < 0.5 ? 0 : seed < 0.7 ? 1 : seed < 0.9 ? 2 : 3;
@@ -50,7 +50,7 @@ async function initDashboard() {
     // Khởi tạo layout & navigation
     if (typeof initLayout === "function") initLayout();
 
-    // Tạo khung HTML cho 9 ô trạm (no-op nếu grid không tồn tại)
+    // Tạo khung HTML cho các ô trạm (no-op nếu grid không tồn tại)
     if (typeof createStationCards === "function") createStationCards();
     if (typeof initStationClickEvents === "function") initStationClickEvents();
 
@@ -81,7 +81,24 @@ async function initDashboard() {
 
 // ===== HÀM 2: PHÂN PHỐI DỮ LIỆU CHO TẤT CẢ MODULES =====
 function updateDashboardUI(latestData) {
-    // Module 1: Cập nhật 9 ô trạm (nếu grid tồn tại)
+    if (!latestData || !latestData.stations_data) return;
+
+    if (typeof STATION_LOCATIONS !== "undefined") {
+        STATION_LOCATIONS.forEach(loc => {
+            const exists = latestData.stations_data.find(s => {
+                const sId = typeof getStationNumericId === "function" ? getStationNumericId(s) : parseInt(s.station_name.split("_")[1], 10);
+                return sId === loc.id;
+            });
+            if (!exists) {
+                latestData.stations_data.push({
+                    station_name: "station_" + loc.id,
+                    R: 0, D: 0, H: 0, V: 0, H_tide: 0, S_risk: 0, code: 0, description: "SAFE"
+                });
+            }
+        });
+    }
+
+    // Module 1: Cập nhật các ô trạm (nếu grid tồn tại)
     if (typeof updateStationCards === "function") {
         updateStationCards(latestData.stations_data);
     }
@@ -135,8 +152,26 @@ function updateDashboardUI(latestData) {
     }
 }
 
+
+// ===== HÀM 2B: CẬP NHẬT COMMAND CENTER KPIS (CHỈ LẤY 7 TRẠM THỰC TẾ) =====
 function updateCommandCenterKPIs(latestData) {
     if (!latestData || !latestData.stations_data) return;
+
+    // 1. Khai báo đúng 7 trạm trong hệ thống (khớp với MONGO_STATION_INDEX)
+    const TARGET_STATION_NAMES = [
+        "station_1",  // Nhà Bè
+        "station_2",  // Thủ Đức
+        "station_3",  // Phú An
+        "station_4",  // Lê Minh Xuân
+        "station_8",  // Hóc Môn
+        "station_9",  // Củ Chi
+        "station_10"  // Gò Vấp
+    ];
+
+    // 2. Lọc bỏ các trạm thừa (như station_5, station_6, station_7)
+    const targetStations = latestData.stations_data.filter(s => 
+        TARGET_STATION_NAMES.includes(s.station_name)
+    );
 
     let maxRisk = 0;
     let maxRiskStation = null;
@@ -144,8 +179,11 @@ function updateCommandCenterKPIs(latestData) {
     let maxRainStation = null;
     let onlineCount = 0;
 
-    latestData.stations_data.forEach(station => {
-        if (station.code !== undefined && station.code !== null) onlineCount++;
+    // 3. Tính toán chỉ trên phạm vi 7 trạm đã lọc
+    targetStations.forEach(station => {
+        if (station.code !== undefined && station.code !== null && station.code !== -1) {
+            onlineCount++;
+        }
         
         if (station.S_risk > maxRisk) {
             maxRisk = station.S_risk;
@@ -158,17 +196,17 @@ function updateCommandCenterKPIs(latestData) {
         }
     });
 
-    // Cập nhật số trạm online
+    // 4. Hiển thị số trạm Online (Sẽ hiển thị dạng X / 7)
     const onlineEl = document.getElementById("kpi-stations-online");
-    if (onlineEl) onlineEl.textContent = `${onlineCount} / ${latestData.stations_data.length}`;
+    if (onlineEl) {
+        onlineEl.textContent = `${onlineCount} / ${TARGET_STATION_NAMES.length}`;
+    }
 
     // Cập nhật Risk Score lớn nhất
     const riskEl = document.getElementById("kpi-max-risk");
     const riskLocEl = document.getElementById("kpi-max-risk-loc");
     if (riskEl) {
         riskEl.textContent = Number(maxRisk).toFixed(2);
-        // Thay đổi gradient hoặc màu dựa trên mức rủi ro nếu cần thiết, 
-        // nhưng class shiny-gradient đã đảm nhận phần hiển thị đẹp.
     }
     if (riskLocEl && maxRiskStation) {
         const stationId = typeof getStationNumericId === "function" ? getStationNumericId(maxRiskStation) : null;
@@ -192,14 +230,15 @@ function updateCommandCenterKPIs(latestData) {
     const aiRecEl = document.getElementById("ai-recommendation");
     
     if (aiTrendEl && aiRecEl) {
-        // Feature: AI Flood Prediction for specific stations (Bình Thạnh, Hóc Môn, Quận 2)
-        const targetStations = ["station_2", "station_7", "station_8"];
+        const targetStationsForecast = ["station_2", "station_8", "station_9"];
         let warningToCritical = [];
         let safeToWarning = [];
         
         latestData.stations_data.forEach(station => {
-            if (targetStations.includes(station.station_name)) {
-                const displayName = typeof getStationDisplayName === "function" ? getStationDisplayName(getStationNumericId(station)) : station.station_name;
+            if (targetStationsForecast.includes(station.station_name)) {
+                const displayName = typeof getStationDisplayName === "function" && typeof getStationNumericId === "function" 
+                    ? getStationDisplayName(getStationNumericId(station)) 
+                    : station.station_name;
                 if (station.code === 1) { // Vàng -> Đỏ
                     warningToCritical.push(displayName);
                 } else if (station.code === 0) { // Xanh lá -> Cam
@@ -222,7 +261,7 @@ function updateCommandCenterKPIs(latestData) {
             }
 
             aiTrendEl.innerHTML = htmlContent;
-            aiTrendEl.style.color = "#a0aec0"; // Màu chữ nhạt cho phần text thường
+            aiTrendEl.style.color = "#a0aec0";
             
             aiRecEl.innerHTML = "<strong style='color:#ffffff;'>Hành động đề xuất:</strong><br/>" + actions.map(a => `<div style="margin-top:4px;">- ${a}</div>`).join('');
             
@@ -236,24 +275,23 @@ function updateCommandCenterKPIs(latestData) {
                 aiRecEl.style.backgroundColor = "rgba(239, 108, 0, 0.1)";
             }
         } else {
-            // Logic mặc định nếu không có dự báo cho 3 trạm trên
             if (maxRisk > 0.8) {
                 aiTrendEl.textContent = `Cảnh báo: Rủi ro ngập đang tăng nhanh tại ${maxRiskStation ? maxRiskStation.station_name : 'một số khu vực'}. Khả năng ngập lụt cục bộ trong 15-30 phút tới.`;
-                aiTrendEl.style.color = "#e53935"; // Updated to standard red
+                aiTrendEl.style.color = "#e53935";
                 aiConfEl.textContent = "94%";
                 aiRecEl.textContent = "Hành động: Điều hướng giao thông khỏi khu vực rủi ro và kích hoạt máy bơm công suất lớn.";
                 aiRecEl.style.borderLeftColor = "#e53935";
                 aiRecEl.style.backgroundColor = "rgba(229, 57, 53, 0.1)";
             } else if (maxRisk > 0.4) {
                 aiTrendEl.textContent = "Dự báo: Lượng mưa tăng nhẹ, hệ thống thoát nước hiện vẫn đáp ứng được. Cần tiếp tục theo dõi.";
-                aiTrendEl.style.color = "#fbc02d"; // Updated to standard yellow
+                aiTrendEl.style.color = "#fbc02d";
                 aiConfEl.textContent = "88%";
                 aiRecEl.textContent = "Hành động: Tăng cường giám sát tại các trạm đang có cảnh báo nhẹ.";
                 aiRecEl.style.borderLeftColor = "#fbc02d";
                 aiRecEl.style.backgroundColor = "rgba(251, 192, 45, 0.1)";
             } else {
                 aiTrendEl.textContent = "Tình trạng ổn định. Hệ thống thoát nước hoạt động bình thường, không có dấu hiệu ngập lụt trong 2 giờ tới.";
-                aiTrendEl.style.color = "#28a745"; // Updated to standard green
+                aiTrendEl.style.color = "#28a745";
                 aiConfEl.textContent = "98%";
                 aiRecEl.textContent = "Hành động: Duy trì hệ thống quan trắc tiêu chuẩn.";
                 aiRecEl.style.borderLeftColor = "#28a745";
