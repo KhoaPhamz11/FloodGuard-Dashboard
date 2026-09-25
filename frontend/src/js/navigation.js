@@ -1,5 +1,5 @@
 // File: navigation.js — Module Dẫn đường tránh ngập & Dashboard AI
-// V5 - Danger zone pulse animation + AI box redesign + forecast color sync
+// V14 - Fixed Fit Panel Container (Không trượt/scroll, tối ưu kích thước Banner & Station Card)
 
 let navMapInstance = null;
 let currentStartCoords = null;
@@ -15,6 +15,7 @@ let currentForecastDetails = null;
 let lastKnownFloodData = null;
 let lastKnownForecasts = null;
 let navigationRiskMode = 'current';
+let selectedHorizon = 24; // 1 | 3 | 6 | 24
 
 let isFetchingAltRoute = false;
 let lastDangerHash = "";
@@ -48,9 +49,120 @@ let startMarker = null;
 let endMarker = null;
 let navMarkers = {};
 
-// ===== Danger zone pulse animation state =====
 let dangerPulseRaf = null;
 let dangerPulseStart = 0;
+
+// ==========================================
+// HÀM UI BANNER THIẾT KẾ COMPACT FIT FRAME
+// ==========================================
+function getAlertBannerUI(type, title, subtitle = '') {
+    let accent = '';
+    let icon = '';
+
+    switch (type) {
+        case 'safe':
+            accent = '#10b981';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            break;
+        case 'advisory':
+            accent = '#f59e0b';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+            break;
+        case 'warning':
+            accent = '#f97316';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+            break;
+        case 'danger':
+            accent = '#ef4444';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            break;
+        case 'rerouted':
+            accent = '#3b82f6';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
+            break;
+        case 'analyzing':
+            accent = '#06b6d4';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="animation:spin 1s linear infinite;"><style>@keyframes spin{100%{transform:rotate(360deg)}}</style><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+            break;
+        case 'error':
+            accent = '#f43f5e';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+            break;
+        case 'info':
+        default:
+            accent = '#94a3b8';
+            icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+            break;
+    }
+
+    return `
+    <div style="position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,1)); border: 1px solid rgba(255,255,255,0.06); border-left: 3px solid ${accent}; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; width: 100%; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+        <div style="position: absolute; top: -10px; right: -10px; width: 45px; height: 45px; background: ${accent}; filter: blur(25px); opacity: 0.15; border-radius: 50%; pointer-events: none;"></div>
+        <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 1;">
+            <div style="color: ${accent}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                ${icon}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;">
+                <div style="font-size: 11px; font-weight: 700; color: #f8fafc; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</div>
+                ${subtitle ? `<div style="font-size: 11px; color: #cbd5e1; line-height: 1.3; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${subtitle}</div>` : ''}
+            </div>
+        </div>
+    </div>
+    ${typeof getForecastUI === 'function' ? getForecastUI() : ''}
+    `;
+}
+
+function getForecastUI() {
+    if (currentRouteGeoJSON) {
+        syncPanelFromRouteStation(currentRouteGeoJSON);
+    }
+    if (!currentForecastDetails) return '';
+
+    const isForecast = navigationRiskMode === 'forecast';
+    const wlCm = formatWaterCm(currentForecastDetails.predWaterLevel);
+    const wlDisplay = wlCm != null ? String(wlCm) : '—';
+    const riskCode = Number(currentForecastDetails.riskCode ?? 0);
+    const station = currentForecastDetails.station || '—';
+    const riskColor = riskColorFromCode(riskCode);
+    const riskText = riskLevelText(riskCode);
+    const distKm = currentForecastDetails.distanceKm;
+    const distStr = distKm != null ? `${Number(distKm).toFixed(1)} km` : '';
+    const modeTag = isForecast ? `AI ${currentForecastDetails.horizon || selectedHorizon}h` : 'Live';
+    const waterLabel = isForecast ? 'Ngập đỉnh' : 'Mực ngập';
+
+    return `
+    <div class="nav-ai-card" style="
+        width:100%;padding:8px 10px;border-radius:8px;
+        background:rgba(15,23,42,0.95);
+        border:1px solid ${riskColor}40;
+        box-sizing:border-box;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
+        <div style="min-width:0;flex:1;overflow:hidden;">
+          <div style="font-size:9px;color:#94a3b8;letter-spacing:0.2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            Trạm gần tuyến · ${modeTag}${distStr ? ' · ' + distStr : ''}
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${station}
+          </div>
+        </div>
+        <span style="
+          flex-shrink:0;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;
+          color:${riskColor};background:${riskColor}20;border:1px solid ${riskColor}50;
+          white-space:nowrap;
+        ">${riskText}</span>
+      </div>
+      <div style="
+        padding:6px 8px;border-radius:6px;background:rgba(30,41,59,0.7);
+        display:flex;align-items:center;justify-content:space-between;gap:6px;
+      ">
+        <span style="font-size:11px;color:#94a3b8;white-space:nowrap;">${waterLabel}</span>
+        <span style="font-size:15px;font-weight:700;color:#f8fafc;white-space:nowrap;">
+          ${wlDisplay}<span style="font-size:10px;color:#64748b;font-weight:500;margin-left:3px;">cm</span>
+        </span>
+      </div>
+    </div>`;
+}
 
 function getStationCount() {
     return (typeof STATION_LOCATIONS !== 'undefined' && STATION_LOCATIONS.length) ? STATION_LOCATIONS.length : 7;
@@ -61,12 +173,42 @@ function resolveStationId(st) {
         const id = getStationNumericId(st);
         if (id != null && !Number.isNaN(id)) return id;
     }
-    if (st.frontend_station_id != null) return Number(st.frontend_station_id);
+    if (st.frontend_station_id != null) {
+        if (typeof getStationNumericId === 'function') {
+            const mapped = getStationNumericId({ frontend_station_id: st.frontend_station_id, station_name: st.station_name });
+            if (mapped != null) return mapped;
+        }
+        return Number(st.frontend_station_id);
+    }
     if (st.station_name) {
         const m = String(st.station_name).match(/(\d+)/);
-        if (m) return parseInt(m[1], 10);
+        if (m) {
+            if (typeof getStationNumericId === 'function') {
+                const mapped = getStationNumericId({ station_name: st.station_name });
+                if (mapped != null) return mapped;
+            }
+            return parseInt(m[1], 10);
+        }
     }
     return null;
+}
+
+function findLiveStationByUiId(uiId) {
+    const list = lastKnownFloodData?.stations_data || [];
+    const matches = list.filter(s => resolveStationId(s) === uiId);
+    if (!matches.length) return null;
+    matches.sort((a, b) => {
+        const ca = Number(a.code ?? -1);
+        const cb = Number(b.code ?? -1);
+        if (cb !== ca) return cb - ca;
+        return (Number(b.H) || 0) - (Number(a.H) || 0);
+    });
+    return matches[0];
+}
+
+function findForecastByUiId(uiId) {
+    const list = lastKnownForecasts || [];
+    return list.find(f => Number(f.frontend_station_id || resolveStationId(f)) === uiId) || null;
 }
 
 function getCuchiLngLat() {
@@ -101,28 +243,155 @@ function nearestPointOnRouteToStation(routeFeature, stationLngLat) {
     return nearest;
 }
 
-function hexToRgba(hex, alpha = 1) {
-    const h = String(hex).replace('#', '');
-    const r = parseInt(h.substring(0, 2), 16);
-    const g = parseInt(h.substring(2, 4), 16);
-    const b = parseInt(h.substring(4, 6), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
+function formatWaterCm(value) {
+    if (value == null || value === '' || value === '—') return null;
+    const n = Number(value);
+    if (Number.isNaN(n)) return null;
+    return Number.isInteger(n) ? n : Math.round(n * 10) / 10;
 }
 
-// ===== Popup =====
+function riskLevelText(code) {
+    if (code >= 3) return 'Ngập mức 3';
+    if (code === 2) return 'Ngập mức 2';
+    if (code === 1) return 'Ngập mức 1';
+    return 'An toàn';
+}
+
+function riskColorFromCode(code) {
+    if (code >= 3) return '#ef4444';
+    if (code === 2) return '#f97316';
+    if (code === 1) return '#eab308';
+    return '#22c55e';
+}
+
+function distanceStationToRouteKm(routeFeature, lng, lat) {
+    if (!routeFeature?.geometry?.coordinates?.length) return Infinity;
+    const target = turf.point([lng, lat]);
+    let best = Infinity;
+    routeFeature.geometry.coordinates.forEach(coord => {
+        const d = turf.distance(target, turf.point(coord), { units: 'kilometers' });
+        if (d < best) best = d;
+    });
+    return best;
+}
+
+function pickRouteDominantStation(routeFeature) {
+    if (!routeFeature || typeof STATION_LOCATIONS === 'undefined') return null;
+    const isForecast = navigationRiskMode === 'forecast';
+    const RADIUS_KM = 3;
+
+    const candidates = [];
+    STATION_LOCATIONS.forEach(loc => {
+        const dist = distanceStationToRouteKm(routeFeature, loc.lng, loc.lat);
+        if (dist > RADIUS_KM) return;
+
+        let code = 0;
+        let water = null;
+        let riskScore = null;
+
+        if (isForecast && lastKnownForecasts) {
+            const fc = findForecastByUiId(loc.id);
+            if (fc && fc.forecast_ready !== false) {
+                code = Number(fc.risk_code ?? 0);
+                water = fc.predicted_water_level ?? fc.predWaterLevel ?? fc.H ?? null;
+            }
+        } else if (lastKnownFloodData?.stations_data) {
+            const st = findLiveStationByUiId(loc.id);
+            if (st) {
+                code = Number(st.code ?? 0);
+                water = st.H ?? st.water_level ?? null;
+                riskScore = st.S_risk ?? null;
+            }
+        }
+
+        candidates.push({
+            id: loc.id,
+            name: loc.backend_name || loc.district,
+            dist,
+            code,
+            water,
+            riskScore,
+            loc
+        });
+    });
+
+    if (!candidates.length) {
+        let best = null;
+        let bestD = Infinity;
+        STATION_LOCATIONS.forEach(loc => {
+            const d = distanceStationToRouteKm(routeFeature, loc.lng, loc.lat);
+            if (d < bestD) {
+                bestD = d;
+                best = loc;
+            }
+        });
+        if (!best) return null;
+        return {
+            id: best.id,
+            name: best.backend_name || best.district,
+            dist: bestD,
+            code: 0,
+            water: null,
+            riskScore: null,
+            loc: best
+        };
+    }
+
+    candidates.sort((a, b) => {
+        if (b.code !== a.code) return b.code - a.code;
+        return a.dist - b.dist;
+    });
+    return candidates[0];
+}
+
+function syncPanelFromRouteStation(routeFeature, extraWater = null) {
+    const dom = pickRouteDominantStation(routeFeature || currentRouteGeoJSON);
+    if (!dom) return null;
+
+    const isForecast = navigationRiskMode === 'forecast';
+    let water = dom.water;
+    if (water == null && extraWater != null) water = extraWater;
+    if (water == null && isForecast && currentForecastDetails?.predWaterLevel != null
+        && (currentForecastDetails.stationId === dom.id || currentForecastDetails.station === dom.name)) {
+        water = currentForecastDetails.predWaterLevel;
+    }
+
+    currentForecastDetails = {
+        station: dom.name,
+        stationId: dom.id,
+        predWaterLevel: water != null ? Number(water) : null,
+        riskLevel: dom.code >= 3 ? 'CRITICAL' : dom.code === 2 ? 'WARNING' : dom.code === 1 ? 'ADVISORY' : 'SAFE',
+        riskCode: dom.code,
+        model: isForecast ? `AI ${selectedHorizon}h · gần tuyến` : 'Live Mongo · gần tuyến',
+        horizon: isForecast ? selectedHorizon : null,
+        distanceKm: dom.dist
+    };
+    return dom;
+}
+
 function updateMarkerPopup(marker, stationId, isForecast, code, color, statusText) {
     const popup = marker.getPopup();
     if (!popup) return;
 
     const loc = typeof getStationLocation === 'function' ? getStationLocation(stationId) : STATION_LOCATIONS?.find(l => l.id === stationId);
     const stationName = loc?.backend_name || loc?.name || `Trạm ${stationId}`;
-    const address = loc?.address || loc?.street || 'TP. Hồ Chí Minh';
+    const address = loc?.street ? `${loc.street}${loc.district ? ', ' + loc.district : ''}` : (loc?.address || 'TP. Hồ Chí Minh');
 
     let popupHtml = '';
 
     if (isForecast) {
         const fc = lastKnownForecasts?.find(f => (f.frontend_station_id || resolveStationId(f)) === stationId);
-        const predWl = fc?.predicted_water_level ?? fc?.predWaterLevel ?? (currentForecastDetails?.predWaterLevel || '—');
+        let rawWl = fc?.predicted_water_level
+            ?? fc?.predWaterLevel
+            ?? fc?.predicted_depth_cm
+            ?? fc?.water_level
+            ?? fc?.H
+            ?? null;
+        if (rawWl == null && currentForecastDetails && (currentForecastDetails.station === stationName || currentForecastDetails.station === loc?.backend_name)) {
+            rawWl = currentForecastDetails.predWaterLevel;
+        }
+        const predCm = formatWaterCm(rawWl);
+        const predDisplay = predCm != null ? `${predCm} cm` : '—';
 
         popupHtml = `
             <div style="padding:8px 10px;min-width:210px;font-family:system-ui,sans-serif;">
@@ -130,19 +399,22 @@ function updateMarkerPopup(marker, stationId, isForecast, code, color, statusTex
                 <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">📍 ${address}</div>
                 <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${color}22;color:${color};border:1px solid ${color}55;margin-bottom:10px;">
                     <span style="width:6px;height:6px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};"></span>
-                    AI 24h · ${statusText}
+                    AI ${selectedHorizon}h · ${statusText}
                 </div>
                 <div style="font-size:12px;color:#cbd5e1;line-height:1.7;">
-                    <div>Mực nước dự báo: <b style="color:#f8fafc;">${predWl} m</b></div>
+                    <div>Mực nước ngập dự báo: <b style="color:#f8fafc;">${predDisplay}</b></div>
                     <div>Risk code: <b style="color:${color};">${code}</b></div>
                 </div>
             </div>
         `;
     } else {
-        const st = lastKnownFloodData?.stations_data?.find(s => resolveStationId(s) === stationId);
-        const wl = st?.water_level != null ? `${st.water_level} cm` : (st?.H != null ? `${st.H} cm` : '—');
-        const ground = loc?.ground_elevation ? `${loc.ground_elevation} m` : '—';
-        const riskScore = st?.risk_score != null ? st.risk_score : (st?.S_risk != null ? st.S_risk : '—');
+        const st = findLiveStationByUiId(stationId);
+        const rawH = st?.H ?? st?.water_level ?? st?.live_water_level_m ?? null;
+        const wlCm = formatWaterCm(rawH);
+        const wlDisplay = wlCm != null ? `${wlCm} cm` : '—';
+        const groundVal = st?.Z_street ?? loc?.ground_elevation ?? null;
+        const ground = groundVal != null ? `${Number(groundVal).toFixed(2)} m` : '—';
+        const riskScore = st?.S_risk ?? st?.risk_score ?? '—';
 
         popupHtml = `
             <div style="padding:8px 10px;min-width:210px;font-family:system-ui,sans-serif;">
@@ -154,7 +426,7 @@ function updateMarkerPopup(marker, stationId, isForecast, code, color, statusTex
                 </div>
                 <div style="font-size:12px;color:#cbd5e1;line-height:1.7;">
                     <div>Cao độ nền: <b style="color:#f8fafc;">${ground}</b></div>
-                    <div>Mực nước: <b style="color:#f8fafc;">${wl}</b></div>
+                    <div>Mực nước ngập: <b style="color:#f8fafc;">${wlDisplay}</b></div>
                     <div>Risk Score: <b style="color:#f8fafc;">${riskScore}</b></div>
                 </div>
             </div>
@@ -164,14 +436,10 @@ function updateMarkerPopup(marker, stationId, isForecast, code, color, statusTex
     popup.setHTML(popupHtml);
 }
 
-// ===== Marker colors (nav) + sync with map.js overrides =====
 function updateNavMapStationMarkers() {
     if (!navMapInstance || !navMarkers) return;
 
     const isForecast = (navigationRiskMode === 'forecast');
-
-    console.log(`%c[DEBUG MARKERS] ${isForecast ? '🤖 FORECAST' : '📊 CURRENT'}`,
-        `color:${isForecast ? '#4dabf7' : '#00E676'};font-weight:bold;`);
 
     Object.keys(navMarkers).forEach(idKey => {
         const id = Number(idKey);
@@ -180,64 +448,42 @@ function updateNavMapStationMarkers() {
 
         let code = 0;
         let statusText = 'An toàn';
-        let color = '#28a745';
-        let branchUsed = 'None';
+        let color = '#22c55e';
 
         if (isForecast && lastKnownForecasts) {
-            branchUsed = 'AI Forecast';
-            const fc = lastKnownForecasts.find(f => (f.frontend_station_id || resolveStationId(f)) === id);
+            const fc = findForecastByUiId(id);
             if (fc) {
-                code = fc.risk_code ?? 0;
-                color = code >= 3 ? '#e53935' : code === 2 ? '#ef6c00' : code === 1 ? '#fbc02d' : '#28a745';
-                statusText = code >= 3 ? 'Nguy hiểm' : code === 2 ? 'Ngập nặng' : code === 1 ? 'Ngập nhẹ' : 'An toàn';
+                code = Number(fc.risk_code ?? 0);
+                color = riskColorFromCode(code);
+                statusText = riskLevelText(code);
             }
         } else if (lastKnownFloodData?.stations_data) {
-            branchUsed = 'Current Data';
-            const st = lastKnownFloodData.stations_data.find(s => resolveStationId(s) === id);
+            const st = findLiveStationByUiId(id);
             if (st) {
-                code = st.code ?? 0;
-                color = code >= 3 ? '#e53935' : code === 2 ? '#ef6c00' : code === 1 ? '#fbc02d' : '#28a745';
-                statusText = st.status || (code >= 3 ? 'Nguy hiểm' : 'An toàn');
+                code = Number(st.code ?? 0);
+                color = riskColorFromCode(code);
+                statusText = riskLevelText(code);
             }
         }
 
-        console.log(` → Trạm ${id} | ${branchUsed} | code=${code} | ${statusText} | %c${color}`, `color:${color};font-weight:bold`);
-
         const markerEl = marker.getElement();
         if (markerEl) {
-            // Đồng bộ CSS class của map.js (marker-critical / marker-safe ...)
             const mapMarker = markerEl.querySelector('.map-marker') || markerEl;
+            const statusClass = code >= 3 ? 'marker-critical'
+                : code === 2 ? 'marker-warning'
+                : code === 1 ? 'marker-advisory'
+                : 'marker-safe';
             if (mapMarker) {
-                const statusClass = code >= 3 ? 'marker-critical' : code === 2 ? 'marker-warning' : code === 1 ? 'marker-advisory' : 'marker-safe';
                 mapMarker.className = `map-marker ${statusClass}`;
+                mapMarker.querySelectorAll('.marker-pulse, .marker-ring, .marker-dot').forEach(n => n.remove());
             }
-
-            // Fallback inline style cho các element pulse cũ (nếu còn)
-            const dot = markerEl.querySelector('.marker-dot') || markerEl.querySelector('.dot');
-            if (dot) {
-                dot.style.backgroundColor = color;
-                dot.style.borderColor = '#ffffff';
-            }
-
-            const pulses = markerEl.querySelectorAll('.marker-pulse, .marker-ring');
-            pulses.forEach((p, index) => {
-                if (index === 0) {
-                    p.style.borderColor = color;
-                    p.style.backgroundColor = 'transparent';
-                    p.style.display = (code >= 1) ? 'block' : 'none';
-                    p.style.setProperty('--pulse-color', color);
-                    p.style.boxShadow = `0 0 0 0 ${hexToRgba(color, 0.55)}`;
-                } else {
-                    p.style.display = 'none';
-                }
-            });
+            markerEl.querySelectorAll('.marker-pulse, .marker-ring').forEach(n => n.remove());
         }
 
         updateMarkerPopup(marker, id, isForecast, code, color, statusText);
     });
 }
 
-// ===== Danger polygons + pulse animation =====
 function stopDangerPulse() {
     if (dangerPulseRaf) {
         cancelAnimationFrame(dangerPulseRaf);
@@ -245,50 +491,19 @@ function stopDangerPulse() {
     }
 }
 
-function startDangerPulse() {
+function clearDangerPolygons() {
     stopDangerPulse();
-    if (!navMapInstance || !navMapInstance.getLayer('nav-danger-zones-layer')) return;
-    if (!currentDangerPolygons || currentDangerPolygons.features.length === 0) {
-        // reset opacity
-        try {
-            navMapInstance.setPaintProperty('nav-danger-zones-layer', 'fill-opacity', 0.18);
-            if (navMapInstance.getLayer('nav-danger-zones-outline')) {
-                navMapInstance.setPaintProperty('nav-danger-zones-outline', 'line-opacity', 0.55);
-            }
-        } catch (_) {}
-        return;
-    }
-
-    dangerPulseStart = performance.now();
-
-    const tick = (now) => {
-        if (!navMapInstance || !navMapInstance.getLayer('nav-danger-zones-layer')) {
-            dangerPulseRaf = null;
-            return;
+    currentDangerPolygons = turf.featureCollection([]);
+    try {
+        if (navMapInstance?.getSource('nav-danger-zones-source')) {
+            navMapInstance.getSource('nav-danger-zones-source').setData(currentDangerPolygons);
         }
-        // Chu kỳ ~2.2s, opacity dao động 0.10 → 0.28
-        const t = ((now - dangerPulseStart) % 2200) / 2200;
-        const wave = 0.5 - 0.5 * Math.cos(t * Math.PI * 2); // 0→1→0
-        const fillOp = 0.10 + wave * 0.18;
-        const outlineOp = 0.35 + wave * 0.40;
-
-        try {
-            navMapInstance.setPaintProperty('nav-danger-zones-layer', 'fill-opacity', fillOp);
-            if (navMapInstance.getLayer('nav-danger-zones-outline')) {
-                navMapInstance.setPaintProperty('nav-danger-zones-outline', 'line-opacity', outlineOp);
-                // scale nhẹ đường viền
-                navMapInstance.setPaintProperty('nav-danger-zones-outline', 'line-width', 1.5 + wave * 2.5);
-            }
-        } catch (_) {}
-
-        dangerPulseRaf = requestAnimationFrame(tick);
-    };
-
-    dangerPulseRaf = requestAnimationFrame(tick);
+    } catch (_) {}
 }
 
 function refreshDangerPolygons() {
     if (!navMapInstance || !navMapInstance.loaded()) return;
+
     const dangerFeatures = [];
     const maxId = getStationCount();
     const seenStations = new Set();
@@ -297,54 +512,39 @@ function refreshDangerPolygons() {
         lastKnownForecasts.forEach(fc => {
             const id = fc.frontend_station_id || resolveStationId(fc);
             if (id == null || id < 1 || id > maxId || seenStations.has(id)) return;
-
-            const code = fc.risk_code ?? 0;
+            const code = Number(fc.risk_code ?? 0);
             if (code === 0) return;
-
             seenStations.add(id);
             const status = code >= 3 ? 'CRITICAL' : (code === 2 ? 'WARNING' : 'ADVISORY');
             const loc = typeof getStationLocation === 'function' ? getStationLocation(id) : STATION_LOCATIONS?.find(l => l.id === id);
             if (!loc) return;
-
             const point = turf.point([loc.lng, loc.lat]);
             const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 48 });
             buffer.properties = { status, riskLevel: code, stationId: id };
             dangerFeatures.push(buffer);
         });
     } else if (navigationRiskMode === 'current' && lastKnownFloodData?.stations_data) {
-        lastKnownFloodData.stations_data.forEach(st => {
-            const id = resolveStationId(st);
-            if (id == null || id < 1 || id > maxId || seenStations.has(id)) return;
-
-            const code = st.code ?? 0;
-            const status = (st.status === 'Nguy hiểm' || code >= 3) ? 'CRITICAL'
-                : code === 2 ? 'WARNING'
-                : code === 1 ? 'ADVISORY'
-                : 'SAFE';
-            if (status === 'SAFE') return;
-
+        for (let id = 1; id <= maxId; id++) {
+            if (seenStations.has(id)) continue;
+            const st = findLiveStationByUiId(id);
+            if (!st) continue;
+            const code = Number(st.code ?? 0);
+            const status = code >= 3 ? 'CRITICAL' : code === 2 ? 'WARNING' : code === 1 ? 'ADVISORY' : 'SAFE';
+            if (status === 'SAFE') continue;
             seenStations.add(id);
             const loc = typeof getStationLocation === 'function' ? getStationLocation(id) : STATION_LOCATIONS?.find(l => l.id === id);
-            if (!loc) return;
-
+            if (!loc) continue;
             const point = turf.point([loc.lng, loc.lat]);
             const buffer = turf.buffer(point, FLOOD_ALERT_RADIUS_KM, { units: 'kilometers', steps: 48 });
             buffer.properties = { status, riskLevel: code, stationId: id };
             dangerFeatures.push(buffer);
-        });
+        }
     }
 
     currentDangerPolygons = turf.featureCollection(dangerFeatures);
 
     if (navMapInstance.getSource('nav-danger-zones-source')) {
         navMapInstance.getSource('nav-danger-zones-source').setData(currentDangerPolygons);
-    }
-
-    // Bắt đầu / dừng pulse
-    if (dangerFeatures.length > 0) {
-        startDangerPulse();
-    } else {
-        stopDangerPulse();
     }
 }
 
@@ -366,42 +566,6 @@ function initNavigationMap() {
         navMapInstance.addSource('nav-danger-zones-source', {
             type: 'geojson',
             data: turf.featureCollection([])
-        });
-
-        // Fill chính
-        navMapInstance.addLayer({
-            id: 'nav-danger-zones-layer',
-            type: 'fill',
-            source: 'nav-danger-zones-source',
-            paint: {
-                'fill-color': [
-                    'match', ['get', 'status'],
-                    'CRITICAL', '#e53935',
-                    'WARNING', '#ef6c00',
-                    'ADVISORY', '#fbc02d',
-                    'transparent'
-                ],
-                'fill-opacity': 0.18
-            }
-        });
-
-        // Outline pulse (viền toả ra)
-        navMapInstance.addLayer({
-            id: 'nav-danger-zones-outline',
-            type: 'line',
-            source: 'nav-danger-zones-source',
-            paint: {
-                'line-color': [
-                    'match', ['get', 'status'],
-                    'CRITICAL', '#e53935',
-                    'WARNING', '#ef6c00',
-                    'ADVISORY', '#fbc02d',
-                    'transparent'
-                ],
-                'line-width': 2,
-                'line-opacity': 0.55,
-                'line-blur': 1.5
-            }
         });
 
         navMapInstance.addSource('nav-route-source', { type: 'geojson', data: turf.featureCollection([]) });
@@ -459,7 +623,6 @@ window.updateNavigationFloodData = function (latestData) {
     const isNavLayerActive = navLayer && navLayer.classList.contains('layer-active');
     if (!isNavLayerActive || !navMapInstance || !navMapInstance.loaded()) return;
 
-    // Chỉ cập nhật danger + marker theo live khi đang ở mode current
     if (navigationRiskMode === 'current') {
         if (typeof clearForecastStationColors === 'function') clearForecastStationColors();
         if (typeof updateMapMarkers === 'function') updateMapMarkers(latestData.stations_data);
@@ -473,88 +636,65 @@ window.updateNavigationFloodData = function (latestData) {
     }
 };
 
-// ===== AI Forecast UI box (redesigned) =====
-function getForecastUI() {
-    if (navigationRiskMode !== 'forecast' || !currentForecastDetails) return '';
+function ensureHorizonSelector() {
+    const toggleEl = document.getElementById('nav-risk-mode');
+    if (!toggleEl) return;
+    const toggleRow = toggleEl.closest('div') || toggleEl.parentElement;
+    if (!toggleRow) return;
 
-    const wl = currentForecastDetails.predWaterLevel;
-    const riskCode = currentForecastDetails.riskCode;
-    const riskLevel = currentForecastDetails.riskLevel;
-    const station = currentForecastDetails.station || '—';
+    let wrap = document.getElementById('nav-horizon-selector');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'nav-horizon-selector';
+        wrap.style.cssText = 'display:none;margin-top:10px;padding:0 2px;';
+        wrap.innerHTML = `
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">Khung dự báo</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${[1, 3, 6, 24].map(h => `
+                    <button type="button" data-horizon="${h}" class="nav-horizon-btn" style="
+                        padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+                        border:1px solid rgba(148,163,184,0.25);background:rgba(30,41,59,0.6);color:#cbd5e1;
+                        transition:all .15s ease;
+                    ">${h}h</button>
+                `).join('')}
+            </div>
+        `;
+        if (toggleRow.parentElement) {
+            toggleRow.parentElement.insertBefore(wrap, toggleRow.nextSibling);
+        } else {
+            toggleRow.appendChild(wrap);
+        }
 
-    let riskColor = '#22c55e';
-    let riskText = 'An toàn';
-    let riskBg = 'rgba(34,197,94,0.12)';
-    let riskBorder = 'rgba(34,197,94,0.35)';
-
-    if (riskCode >= 3 || riskLevel === 'CRITICAL') {
-        riskColor = '#ef4444'; riskText = 'Nguy hiểm';
-        riskBg = 'rgba(239,68,68,0.14)'; riskBorder = 'rgba(239,68,68,0.4)';
-    } else if (riskCode === 2 || riskLevel === 'WARNING') {
-        riskColor = '#f97316'; riskText = 'Ngập nặng';
-        riskBg = 'rgba(249,115,22,0.14)'; riskBorder = 'rgba(249,115,22,0.4)';
-    } else if (riskCode === 1 || riskLevel === 'ADVISORY') {
-        riskColor = '#eab308'; riskText = 'Ngập nhẹ';
-        riskBg = 'rgba(234,179,8,0.14)'; riskBorder = 'rgba(234,179,8,0.4)';
+        wrap.querySelectorAll('.nav-horizon-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const h = Number(btn.dataset.horizon);
+                if (h === selectedHorizon) return;
+                selectedHorizon = h;
+                updateHorizonButtons();
+                if (riskModeLabel) {
+                    riskModeLabel.textContent = `Dự báo AI (${h} giờ)`;
+                }
+                if (currentRouteGeoJSON && navigationRiskMode === 'forecast') {
+                    updateRouteForecast(currentRouteGeoJSON);
+                }
+            });
+        });
     }
 
-    return `
-        <div style="
-            margin-top:14px;
-            padding:14px 14px 12px;
-            background: linear-gradient(145deg, rgba(15,23,42,0.92), rgba(30,41,59,0.88));
-            border: 1px solid rgba(148,163,184,0.18);
-            border-radius: 12px;
-            box-shadow: 0 8px 24px -6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
-            backdrop-filter: blur(8px);
-        ">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="
-                        width:28px;height:28px;border-radius:8px;
-                        background: linear-gradient(135deg, ${riskColor}33, ${riskColor}11);
-                        border:1px solid ${riskColor}44;
-                        display:flex;align-items:center;justify-content:center;
-                    ">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${riskColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2z" opacity="0.3"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <div style="font-size:11px;font-weight:600;color:#e2e8f0;letter-spacing:0.3px;">Phân tích AI · 24h</div>
-                        <div style="font-size:10px;color:#64748b;margin-top:1px;">Trạm ${station}</div>
-                    </div>
-                </div>
-                <div style="
-                    padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;
-                    color:${riskColor};background:${riskBg};border:1px solid ${riskBorder};
-                ">${riskText}</div>
-            </div>
+    wrap.style.display = navigationRiskMode === 'forecast' ? 'block' : 'none';
+    updateHorizonButtons();
+}
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <div style="
-                    background:rgba(15,23,42,0.55);border-radius:9px;padding:10px 12px;
-                    border:1px solid rgba(148,163,184,0.1);
-                ">
-                    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px;">Mực nước đỉnh</div>
-                    <div style="font-size:18px;font-weight:700;color:#f8fafc;letter-spacing:-0.3px;">
-                        ${wl}<span style="font-size:12px;font-weight:500;color:#64748b;margin-left:3px;">m</span>
-                    </div>
-                </div>
-                <div style="
-                    background:rgba(15,23,42,0.55);border-radius:9px;padding:10px 12px;
-                    border:1px solid rgba(148,163,184,0.1);border-left:3px solid ${riskColor};
-                ">
-                    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px;">Mức cảnh báo</div>
-                    <div style="font-size:15px;font-weight:700;color:${riskColor};display:flex;align-items:center;gap:6px;">
-                        <span style="width:7px;height:7px;border-radius:50%;background:${riskColor};box-shadow:0 0 8px ${riskColor};"></span>
-                        ${riskText}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+function updateHorizonButtons() {
+    const wrap = document.getElementById('nav-horizon-selector');
+    if (!wrap) return;
+    wrap.querySelectorAll('.nav-horizon-btn').forEach(btn => {
+        const h = Number(btn.dataset.horizon);
+        const active = h === selectedHorizon;
+        btn.style.background = active ? 'rgba(56,189,248,0.2)' : 'rgba(30,41,59,0.6)';
+        btn.style.borderColor = active ? 'rgba(56,189,248,0.55)' : 'rgba(148,163,184,0.25)';
+        btn.style.color = active ? '#38bdf8' : '#cbd5e1';
+    });
 }
 
 function analyzeFloodRoute() {
@@ -563,19 +703,23 @@ function analyzeFloodRoute() {
     const routeCoords = currentRouteGeoJSON.geometry.coordinates;
     const routeLine = turf.lineString(routeCoords);
 
-    let routeRisk = 'safe';
-    if (navigationRiskMode === 'current') {
-        const routeHits = (currentDangerPolygons?.features || []).filter(zone =>
-            turf.booleanIntersects(routeLine, zone)
-        );
-        const maxCode = routeHits.reduce((max, zone) => Math.max(max, Number(zone.properties?.riskLevel || 0)), 0);
-        routeRisk = typeof getStatusFromCode === 'function'
-            ? getStatusFromCode(maxCode)
-            : (maxCode >= 3 ? 'CRITICAL' : maxCode === 2 ? 'WARNING' : maxCode === 1 ? 'ADVISORY' : 'SAFE');
-        if (routeRisk === 'SAFE') routeRisk = 'safe';
-    } else if (currentForecastReady) {
-        routeRisk = currentForecastRisk;
+    const routeHits = (currentDangerPolygons?.features || []).filter(zone => {
+        try { return turf.booleanIntersects(routeLine, zone); } catch (_) { return false; }
+    });
+    const maxFromZones = routeHits.reduce((max, zone) => Math.max(max, Number(zone.properties?.riskLevel || 0)), 0);
+    const maxFromPanel = Number(currentForecastDetails?.riskCode ?? 0);
+    let maxFromPoint = 0;
+    if (navigationRiskMode === 'forecast' && currentForecastReady) {
+        const r = currentForecastRisk;
+        maxFromPoint = r === 'CRITICAL' || r === 'critical' ? 3
+            : r === 'WARNING' || r === 'warning' ? 2
+            : r === 'ADVISORY' || r === 'advisory' ? 1 : 0;
     }
+    const maxCode = Math.max(maxFromZones, maxFromPanel, maxFromPoint);
+    let routeRisk = typeof getStatusFromCode === 'function'
+        ? getStatusFromCode(maxCode)
+        : (maxCode >= 3 ? 'CRITICAL' : maxCode === 2 ? 'WARNING' : maxCode === 1 ? 'ADVISORY' : 'SAFE');
+    if (routeRisk === 'SAFE') routeRisk = 'safe';
 
     if (navMapInstance && navMapInstance.getLayer('nav-route-danger-layer')) {
         const dangerColor = (navigationRiskMode === 'forecast') ? '#ef6c00' : '#e53935';
@@ -593,54 +737,33 @@ function analyzeFloodRoute() {
     const statusEl = document.getElementById('nav-summary-status');
     if (!statusEl) return;
 
+    if (!hasCritical) lastDangerHash = "";
+
     if (hasCritical) {
-        const currentHash = JSON.stringify(currentDangerPolygons) + navigationRiskMode;
+        const currentHash = JSON.stringify(currentDangerPolygons) + navigationRiskMode + selectedHorizon;
+        const hasAlt = !!(currentAltRouteGeoJSON?.geometry?.coordinates?.length > 1);
         if (!isFetchingAltRoute && lastDangerHash !== currentHash) {
             statusEl.className = 'nav-summary-status danger';
-            statusEl.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#fca5a5;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" style="animation:spin 1.2s linear infinite;flex-shrink:0;">
-                        <style>@keyframes spin{100%{transform:rotate(360deg)}}</style>
-                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                    </svg>
-                    <span>Nguy cơ ngập nghiêm trọng · Đang tìm đường vòng…</span>
-                </div>
-                ${getForecastUI()}
-            `;
+            statusEl.innerHTML = getAlertBannerUI('danger', 'Ngập mức 3 (Nghiêm trọng)', 'Đang tìm kiếm tuyến đường vòng...');
             fetchSafeAlternativeRoute(currentHash);
+        } else if (hasAlt) {
+            statusEl.className = 'nav-summary-status safe';
+            statusEl.innerHTML = getAlertBannerUI('rerouted', 'Đã vẽ tuyến vòng tránh ngập', 'Tuyến đường xanh lá an toàn.');
+        } else if (!isFetchingAltRoute) {
+            statusEl.className = 'nav-summary-status danger';
+            statusEl.innerHTML = getAlertBannerUI('danger', 'Ngập mức 3 (Nghiêm trọng)', 'Chưa tìm thấy tuyến vòng an toàn.');
         }
     } else if (hasWarning) {
-        lastDangerHash = "";
         statusEl.className = 'nav-summary-status warning';
-        statusEl.innerHTML = `
-            <div style="font-size:13.5px;display:flex;align-items:center;gap:7px;">
-                <span style="color:#f97316;font-size:15px;">⚠</span>
-                <span>Có cảnh báo ngập nặng trên tuyến</span>
-            </div>
-            ${getForecastUI()}
-        `;
+        statusEl.innerHTML = getAlertBannerUI('warning', 'Cảnh báo ngập mức 2', 'Nên tìm lộ trình khác nếu xe gầm thấp.');
         clearAltRoute();
     } else if (hasAdvisory) {
-        lastDangerHash = "";
         statusEl.className = 'nav-summary-status advisory';
-        statusEl.innerHTML = `
-            <div style="font-size:13.5px;display:flex;align-items:center;gap:7px;">
-                <span style="color:#eab308;font-size:15px;">⚠</span>
-                <span>Có cảnh báo ngập nhẹ trên tuyến</span>
-            </div>
-            ${getForecastUI()}
-        `;
+        statusEl.innerHTML = getAlertBannerUI('advisory', 'Cảnh báo ngập mức 1', 'Đường có thể đọng nước, chú ý quan sát.');
         clearAltRoute();
     } else {
-        lastDangerHash = "";
         statusEl.className = 'nav-summary-status safe';
-        statusEl.innerHTML = `
-            <div style="font-size:13.5px;display:flex;align-items:center;gap:7px;">
-                <span style="color:#22c55e;font-size:15px;">✓</span>
-                <span>Lộ trình an toàn</span>
-            </div>
-            ${getForecastUI()}
-        `;
+        statusEl.innerHTML = getAlertBannerUI('safe', 'Lộ trình an toàn', 'Hiện không có cảnh báo ngập trên tuyến.');
         clearAltRoute();
     }
     const panel = document.getElementById('nav-summary-panel');
@@ -733,14 +856,16 @@ async function fetchSafeAlternativeRoute(currentHash) {
 
         const statusEl = document.getElementById('nav-summary-status');
         if (statusEl) {
-            statusEl.innerHTML = `
-                <div style="font-size:13.5px;display:flex;align-items:center;gap:7px;">
-                    <span style="color:#22c55e;font-size:15px;">✓</span>
-                    <span>Đã tìm lộ trình vòng tránh ngập <strong style="color:#4ade80;">(xanh)</strong> · ${distKm} km · ${timeMin} phút</span>
-                </div>
-                ${getForecastUI()}
-            `;
-            statusEl.className = 'nav-summary-status safe';
+            const hasAlt = currentAltRouteGeoJSON
+                && currentAltRouteGeoJSON.geometry
+                && currentAltRouteGeoJSON.geometry.coordinates?.length > 1;
+            if (hasAlt) {
+                statusEl.innerHTML = getAlertBannerUI('rerouted', 'Đã tránh điểm ngập', `Tuyến thay thế dài ${distKm} km (${timeMin} phút).`);
+                statusEl.className = 'nav-summary-status safe';
+            } else {
+                statusEl.innerHTML = getAlertBannerUI('danger', 'Không thể tránh ngập', 'Ngập diện rộng, không vẽ được tuyến thay thế.');
+                statusEl.className = 'nav-summary-status danger';
+            }
         }
         lastDangerHash = currentHash;
 
@@ -751,11 +876,11 @@ async function fetchSafeAlternativeRoute(currentHash) {
         if (statusEl) {
             statusEl.className = 'nav-summary-status danger';
             if (e.name === 'AbortError') {
-                statusEl.innerHTML = '<div style="font-size:13.5px;"><span style="color:#ef4444;">⛔</span> Quá thời gian chờ. Không tìm được tuyến thay thế.</div>';
+                statusEl.innerHTML = getAlertBannerUI('error', 'Lỗi tải lộ trình', 'Quá thời gian chờ. Không tìm được tuyến thay thế.');
             } else if (e.message === 'API_RATE_LIMIT') {
-                statusEl.innerHTML = '<div style="font-size:13.5px;"><span style="color:#ef4444;">⛔</span> Hệ thống đang quá tải. Thử lại sau.</div>';
+                statusEl.innerHTML = getAlertBannerUI('error', 'Hệ thống quá tải', 'Vui lòng thử lại sau ít phút.');
             } else {
-                statusEl.innerHTML = '<div style="font-size:13.5px;"><span style="color:#ef4444;">⛔</span> Ngập diện rộng. Không tìm được tuyến vòng an toàn.</div>';
+                statusEl.innerHTML = getAlertBannerUI('error', 'Không thể tránh ngập', 'Ngập diện rộng. Không tìm được tuyến vòng an toàn.');
             }
         }
     } finally {
@@ -811,7 +936,7 @@ async function fetchRoute() {
         const statusEl = document.getElementById('nav-summary-status');
         if (statusEl) {
             statusEl.className = 'nav-summary-status danger';
-            statusEl.innerHTML = '<span style="color:#ef4444;">⚠</span> Lỗi lấy lộ trình. Kiểm tra API.';
+            statusEl.innerHTML = getAlertBannerUI('error', 'Lỗi tìm đường', 'Không thể lấy lộ trình, vui lòng kiểm tra API.');
             const panel = document.getElementById('nav-summary-panel');
             if (panel) panel.style.display = 'block';
         }
@@ -824,28 +949,23 @@ async function updateRouteForecast(routeFeature) {
 
     if (statusEl && navigationRiskMode === 'forecast') {
         statusEl.className = 'nav-summary-status advisory';
-        statusEl.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" style="animation:spin 1s linear infinite;">
-                    <style>@keyframes spin{100%{transform:rotate(360deg)}}</style>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                <span style="color:#e2e8f0;font-weight:500;font-size:13.5px;">AI đang phân tích rủi ro ngập…</span>
-            </div>
-        `;
+        statusEl.innerHTML = getAlertBannerUI('analyzing', `Đang phân tích rủi ro ngập AI (${selectedHorizon}h)...`, '');
         if (panel) panel.style.display = 'block';
     }
 
     const applyCurrentRouteMode = (message) => {
-        navigationRiskMode = 'current';
-        if (riskModeInput) riskModeInput.checked = false;
         currentForecastReady = false;
         currentForecastRisk = 'safe';
         currentForecastDetails = null;
+        lastDangerHash = "";
 
         if (typeof clearForecastStationColors === 'function') clearForecastStationColors();
         if (lastKnownFloodData?.stations_data && typeof updateMapMarkers === 'function') {
             updateMapMarkers(lastKnownFloodData.stations_data);
+        }
+
+        if (!riskModeInput?.checked) {
+            navigationRiskMode = 'current';
         }
 
         refreshDangerPolygons();
@@ -853,23 +973,34 @@ async function updateRouteForecast(routeFeature) {
 
         if (statusEl) {
             statusEl.className = 'nav-summary-status advisory';
-            statusEl.innerHTML = `<span style="color:#94a3b8;">ℹ</span> ${message}`;
+            statusEl.innerHTML = getAlertBannerUI('info', 'Thông báo', message);
         }
         analyzeFloodRoute();
     };
 
     if (navigationRiskMode === 'current') {
-        applyCurrentRouteMode('Đang dùng tình trạng ngập hiện tại từ hệ thống quan trắc.');
+        currentForecastReady = false;
+        currentForecastRisk = 'safe';
+        lastDangerHash = "";
+        lastKnownForecasts = null;
+        if (typeof clearForecastStationColors === 'function') clearForecastStationColors();
+        clearDangerPolygons();
+        if (lastKnownFloodData?.stations_data && typeof updateMapMarkers === 'function') {
+            updateMapMarkers(lastKnownFloodData.stations_data);
+        }
+        syncPanelFromRouteStation(routeFeature);
+        refreshDangerPolygons();
+        updateNavMapStationMarkers();
+        analyzeFloodRoute();
         return;
     }
 
-    const horizon = 24;
+    const horizon = selectedHorizon;
     try {
         if (typeof fetchStationForecasts === 'function') {
             const stationForecasts = await fetchStationForecasts({ horizon });
             lastKnownForecasts = stationForecasts.forecasts || stationForecasts;
 
-            // ★ Đồng bộ màu marker nhỏ với forecast
             if (typeof applyForecastStationColors === 'function') {
                 applyForecastStationColors(lastKnownForecasts);
             }
@@ -892,37 +1023,50 @@ async function updateRouteForecast(routeFeature) {
             return;
         }
 
-        const result = await fetchForecast({ latitude: nearestOnRoute[1], longitude: nearestOnRoute[0], horizons: [horizon] });
+        const result = await fetchForecast({
+            latitude: nearestOnRoute[1],
+            longitude: nearestOnRoute[0],
+            horizons: [horizon]
+        });
 
         const modelLabel = result.model === 'hourly' ? 'Hourly Củ Chi' : `Daily (${result.station || nearestStation?.backend_name || '—'})`;
         currentForecastReady = Boolean(result.forecast_ready);
 
         let forecastRisk = 'SAFE';
-        if (result.risk_code >= 3 || result.risk_level === 'CRITICAL') {
-            forecastRisk = 'CRITICAL';
-        } else if (result.risk_code === 2 || result.risk_level === 'WARNING') {
-            forecastRisk = 'WARNING';
-        } else if (result.risk_code === 1 || result.risk_level === 'ADVISORY') {
-            forecastRisk = 'ADVISORY';
-        }
+        if (result.risk_code >= 3 || result.risk_level === 'CRITICAL') forecastRisk = 'CRITICAL';
+        else if (result.risk_code === 2 || result.risk_level === 'WARNING') forecastRisk = 'WARNING';
+        else if (result.risk_code === 1 || result.risk_level === 'ADVISORY') forecastRisk = 'ADVISORY';
         currentForecastRisk = forecastRisk === 'SAFE' ? 'safe' : forecastRisk;
 
         let predWaterLevel = null;
         if (result.model === 'hourly' && Array.isArray(result.forecasts) && result.forecasts.length > 0) {
-            predWaterLevel = result.forecasts[0].predicted_water_level;
+            const match = result.forecasts.find(f => Number(f.horizon) === horizon) || result.forecasts[0];
+            predWaterLevel = match?.predicted_water_level ?? match?.predWaterLevel;
         } else if (result.model === 'daily' && result.forecast) {
-            predWaterLevel = result.forecast.predicted_water_level;
+            predWaterLevel = result.forecast.predicted_water_level ?? result.forecast.predWaterLevel;
         } else if (result.predicted_water_level != null) {
             predWaterLevel = result.predicted_water_level;
         }
 
         currentForecastDetails = {
             station: result.station || nearestStation?.backend_name || '—',
-            predWaterLevel: predWaterLevel != null ? Number(predWaterLevel).toFixed(2) : '—',
+            stationId: null,
+            predWaterLevel: predWaterLevel != null ? Number(predWaterLevel) : null,
             riskLevel: forecastRisk,
             riskCode: result.risk_code ?? (forecastRisk === 'CRITICAL' ? 3 : forecastRisk === 'WARNING' ? 2 : forecastRisk === 'ADVISORY' ? 1 : 0),
-            model: modelLabel
+            model: modelLabel,
+            horizon
         };
+
+        const dom = syncPanelFromRouteStation(
+            routeFeature,
+            predWaterLevel != null ? Number(predWaterLevel) : null
+        );
+        if (dom && result.station && (dom.name === result.station || result.station.includes(dom.name) || dom.name.includes(result.station))) {
+            currentForecastDetails.riskCode = Number(result.risk_code ?? dom.code);
+            currentForecastDetails.riskLevel = forecastRisk;
+            if (predWaterLevel != null) currentForecastDetails.predWaterLevel = Number(predWaterLevel);
+        }
 
         if (result.model_status === 'unavailable' || !result.forecast_ready) {
             applyCurrentRouteMode('Không có dữ liệu dự báo; đang dùng tình trạng hiện tại.');
@@ -1037,38 +1181,126 @@ function updateMarkers() {
     }
 }
 
+// CẤU HÌNH BẮT BUỘC FIT VỪA KHUNG (BỎ SCROLLBAR)
+(function injectNavPanelStyles() {
+    if (document.getElementById('nav-panel-fix')) return;
+    const s = document.createElement('style');
+    s.id = 'nav-panel-fix';
+    s.textContent = `
+      #nav-summary-panel, .navigation-summary-panel {
+        width: min(310px, calc(100vw - 32px)) !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        padding: 10px 12px !important;
+        border-radius: 12px !important;
+      }
+      #nav-summary-status {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0px !important;
+      }
+      #nav-summary-status .nav-ai-card {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      #nav-summary-panel .nav-summary-metrics,
+      #nav-summary-dist, #nav-summary-time {
+        white-space: nowrap;
+      }
+    `;
+    document.head.appendChild(s);
+})();
+
+function ensureNavPanelStyles() {
+    if (document.getElementById('nav-panel-fix-v13')) return;
+    const s = document.createElement('style');
+    s.id = 'nav-panel-fix-v13';
+    s.textContent = `
+      .navigation-summary-panel {
+        width: min(310px, calc(100vw - 32px)) !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .nav-summary-status {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0px !important;
+        width: 100% !important;
+        box-sizing: border-box;
+      }
+      .map-marker-wrapper {
+        --radar-radius: 16px !important;
+      }
+    `;
+    document.head.appendChild(s);
+}
+
 const riskModeInput = document.getElementById('nav-risk-mode');
 const riskModeLabel = document.getElementById('nav-risk-mode-label');
 
 riskModeInput?.addEventListener('change', () => {
     navigationRiskMode = riskModeInput.checked ? 'forecast' : 'current';
     if (riskModeLabel) {
-        riskModeLabel.textContent = navigationRiskMode === 'forecast' ? 'Dự báo AI (24 giờ)' : 'Tình trạng hiện tại';
+        riskModeLabel.textContent = navigationRiskMode === 'forecast'
+            ? `Dự báo AI (${selectedHorizon} giờ)`
+            : 'Tình trạng hiện tại';
     }
 
+    ensureHorizonSelector();
+    lastFloodDataSignature = "";
+    lastDangerHash = "";
+    isFetchingAltRoute = false;
+
     if (navigationRiskMode === 'forecast') {
-        // Nếu đã có forecast trước đó thì apply ngay
-        if (lastKnownForecasts && typeof applyForecastStationColors === 'function') {
-            applyForecastStationColors(lastKnownForecasts);
-            if (lastKnownFloodData?.stations_data && typeof updateMapMarkers === 'function') {
-                updateMapMarkers(lastKnownFloodData.stations_data);
-            }
-        }
-    } else {
-        if (typeof clearForecastStationColors === 'function') clearForecastStationColors();
         if (lastKnownFloodData?.stations_data && typeof updateMapMarkers === 'function') {
             updateMapMarkers(lastKnownFloodData.stations_data);
         }
-    }
+        updateNavMapStationMarkers();
+        if (currentRouteGeoJSON) {
+            updateRouteForecast(currentRouteGeoJSON);
+        } else {
+            refreshDangerPolygons();
+        }
+    } else {
+        currentForecastReady = false;
+        currentForecastRisk = 'safe';
+        currentForecastDetails = null;
+        lastKnownForecasts = null;
 
-    refreshDangerPolygons();
-    updateNavMapStationMarkers();
+        if (typeof clearForecastStationColors === 'function') {
+            clearForecastStationColors();
+        }
+        clearDangerPolygons();
+        resetAltRouteVisual?.();
+        currentAltRouteGeoJSON = null;
 
-    if (currentRouteGeoJSON) {
-        updateRouteForecast(currentRouteGeoJSON);
-        analyzeFloodRoute();
+        if (lastKnownFloodData?.stations_data && typeof updateMapMarkers === 'function') {
+            updateMapMarkers(lastKnownFloodData.stations_data);
+        }
+
+        refreshDangerPolygons();
+        updateNavMapStationMarkers();
+
+        if (currentRouteGeoJSON) {
+            syncPanelFromRouteStation(currentRouteGeoJSON);
+            analyzeFloodRoute();
+        } else {
+            const statusEl = document.getElementById('nav-summary-status');
+            if (statusEl) {
+                statusEl.className = 'nav-summary-status advisory';
+                statusEl.innerHTML = getAlertBannerUI('info', 'Thông báo', 'Đang dùng tình trạng hiện tại (Mongo).');
+            }
+        }
     }
 });
+
+setTimeout(ensureHorizonSelector, 400);
 
 const startInput = document.getElementById('nav-start-input');
 const endInput = document.getElementById('nav-end-input');
@@ -1099,7 +1331,10 @@ if (navLayerEl) {
         mutations.forEach((mutation) => {
             if (mutation.target.id === 'layer-navigation' && mutation.target.classList.contains('layer-active')) {
                 initNavigationMap();
-                setTimeout(() => { if (navMapInstance) navMapInstance.resize(); }, 300);
+                setTimeout(() => {
+                    if (navMapInstance) navMapInstance.resize();
+                    ensureHorizonSelector();
+                }, 300);
                 if (lastKnownFloodData) updateNavigationFloodData(lastKnownFloodData);
             }
         });

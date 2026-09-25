@@ -38,7 +38,7 @@ db = client["flood_monitoring"]
 collection = db["sensor_data"]
 
 # OpenRouteService Configuration
-ORS_API_KEY = os.getenv("ORS_API_KEY_3")
+ORS_API_KEY = os.getenv("ORS_API_KEY")
 ORS_BASE_URL = "https://api.openrouteservice.org"
 
 from typing import Optional, Dict, Any
@@ -54,7 +54,7 @@ def debug_env():
     return {
         "env_path": env_path,
         "env_exists": os.path.exists(env_path),
-        "key": os.getenv("ORS_API_KEY_3")
+        "key": os.getenv("ORS_API_KEY")
     }
 
 @app.get("/api/navigation/geocode")
@@ -63,7 +63,7 @@ def geocode_search(text: str):
     API tìm kiếm địa điểm (Geocoding) thông qua OpenRouteService.
     Ẩn API Key khỏi frontend.
     """
-    current_key = os.getenv("ORS_API_KEY_3")
+    current_key = os.getenv("ORS_API_KEY")
     if not current_key or current_key == "your_openrouteservice_api_key_here":
         raise HTTPException(status_code=500, detail="Chưa cấu hình ORS_API_KEY trong backend .env")
     
@@ -89,7 +89,7 @@ def get_driving_route(request: RouteRequest):
     """
     API tìm đường đi ngắn nhất (Routing) thông qua OpenRouteService.
     """
-    current_key = os.getenv("ORS_API_KEY_3")
+    current_key = os.getenv("ORS_API_KEY")
     if not current_key or current_key == "your_openrouteservice_api_key_here":
         raise HTTPException(status_code=500, detail="Chưa cấu hình ORS_API_KEY trong backend .env")
         
