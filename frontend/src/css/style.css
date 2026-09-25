@@ -360,3 +360,30 @@ body {
     font-weight: 600;
     padding: 20px;
 }
+/* ===================================================================
+   MAP MARKERS & OFFLINE STATUS (Cấu hình trạm Ngoại tuyến / Offline)
+   =================================================================== */
+
+/* 1. Marker trạm trên bản đồ khi Offline */
+.map-marker.marker-offline {
+    background-color: #6c757d !important; /* Màu xám trung tính */
+    border-color: #495057 !important;     /* Viền xám đậm */
+    box-shadow: 0 0 8px rgba(108, 117, 125, 0.4) !important;
+    filter: grayscale(100%);               /* Ép mọi hiệu ứng con về màu xám */
+}
+
+/* 2. Tắt hiệu ứng vòng sóng/phát sáng radar khi trạm Offline */
+.map-marker.marker-offline::after,
+.map-marker.marker-offline::before {
+    animation: none !important;
+    border-color: #888888 !important;
+    opacity: 0.2 !important;
+}
+
+/* 3. Badge trạng thái "Ngoại tuyến" trong Popup bản đồ */
+.status-pill.status-offline,
+.popup-status.status-offline {
+    background: rgba(108, 117, 125, 0.2) !important;
+    color: #a0aec0 !important;
+    border: 1px solid rgba(108, 117, 125, 0.4) !important;
+}

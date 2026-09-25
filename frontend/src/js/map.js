@@ -1,4 +1,4 @@
-// File: map.js — V5: 1 vòng pulse = đúng màu chấm trạm; forecast chỉ prefix "nav"
+// File: map.js — V5.1 (Đã làm sạch cú pháp & fix logic Offline)
 let mainMap = null;
 let fullscreenMap = null;
 let mainMarkers = {};
@@ -63,7 +63,6 @@ function initFullscreenMap() {
 }
 
 function getRadarRadiusPx(zoom) {
-    // Vòng nhỏ quanh chấm trạm (~16px) — KHÔNG phóng 1km (trùng danger polygon)
     return "16px";
 }
 
@@ -76,25 +75,20 @@ function updateMarkersZoom(map, markersObj) {
     });
 }
 
-/**
- * Marker HTML: CHỈ 1 chấm. Vòng pulse = CSS animation của class marker-*.
- * Không thêm .marker-pulse / .marker-ring thứ 2.
- */
 function createMarkersForMap(map, markersObj, prefix) {
     if (typeof STATION_LOCATIONS === "undefined") return;
 
     STATION_LOCATIONS.forEach(loc => {
         const el = document.createElement("div");
         el.className = "map-marker-wrapper";
-        // Một div duy nhất — pulse từ CSS box-shadow keyframes
         el.innerHTML = `<div class="map-marker marker-safe" id="marker-${prefix}-${loc.id}"></div>`;
 
         const popupHTML = `
             <div class="popup-station-name">
-                ${getStationDisplayName(loc.id)}
+                ${typeof getStationDisplayName === "function" ? getStationDisplayName(loc.id) : `Trạm ${loc.id}`}
                 <button class="popup-arrow-btn" onclick="goToStationDetail(${loc.id})" title="Xem chi tiết">➔</button>
             </div>
-            <div class="popup-district">📍 ${loc.street}, ${loc.district}</div>
+            <div class="popup-district">📍 ${loc.street || ''}, ${loc.district || ''}</div>
             <div class="popup-status status-pill status-safe" id="popup-status-${prefix}-${loc.id}">An toàn</div>
             <div style="margin-top:6px;">
                 <span>Cao độ nền: <b id="popup-zstreet-${prefix}-${loc.id}">--</b> m</span><br>
@@ -119,7 +113,7 @@ let forecastStationOverrides = {};
 function applyForecastStationColors(forecasts) {
     forecastStationOverrides = {};
     (forecasts || []).forEach(fc => {
-        const id = fc.frontend_station_id;
+        const id = fc.frontend_station_id ?? resolveStationId(fc);
         if (id == null || fc.forecast_ready === false) return;
         forecastStationOverrides[Number(id)] = Number(fc.risk_code ?? 0);
     });
@@ -127,6 +121,21 @@ function applyForecastStationColors(forecasts) {
 
 function clearForecastStationColors() {
     forecastStationOverrides = {};
+}
+
+// ===== HELPER PICKERS =====
+function resolveStationId(st) {
+    if (!st) return null;
+    if (typeof getStationNumericId === "function") {
+        const id = getStationNumericId(st);
+        if (id != null && !Number.isNaN(id)) return id;
+    }
+    if (st.frontend_station_id != null) return Number(st.frontend_station_id);
+    if (st.station_name) {
+        const m = String(st.station_name).match(/(\d+)/);
+        if (m) return parseInt(m[1], 10);
+    }
+    return null;
 }
 
 function pickDepthCm(station) {
@@ -153,74 +162,72 @@ function pickRiskScore(station) {
     return null;
 }
 
-/**
- * Tô marker: màu chấm + vòng pulse CSS cùng class.
- * forecast override CHỈ prefix "nav". main/full luôn live.
- */
 function updateMapMarkers(stationsData) {
     if (!stationsData) return;
 
     const statusLabels = {
-        SAFE: "An toàn", ADVISORY: "Cảnh báo nhẹ",
-        WARNING: "Cảnh báo", CRITICAL: "Nguy hiểm"
+        SAFE: "An toàn",
+        ADVISORY: "Cảnh báo nhẹ",
+        WARNING: "Cảnh báo",
+        CRITICAL: "Nguy hiểm",
+        OFFLINE: "Ngoại tuyến"
     };
 
-    const byUiId = {};
     stationsData.forEach(station => {
-        const id = typeof getStationNumericId === "function" ? getStationNumericId(station) : null;
-        if (id == null || id < 1) return;
-        byUiId[id] = station; // station_6 đã null → chỉ station_9
-    });
+        const id = resolveStationId(station);
+        if (id == null || Number.isNaN(id)) return;
 
-    Object.keys(byUiId).forEach(idKey => {
-        const id = Number(idKey);
-        const station = byUiId[id];
-        const liveCode = Number(station.code ?? station.risk_code ?? 0);
+        const rawCode = Number(station.code ?? station.risk_code ?? 0);
+        
+        const isOffline = rawCode === -1 || 
+                          String(station.status).toLowerCase() === "offline" || 
+                          String(station.label).toLowerCase() === "offline";
+
+        const effectiveCode = Object.prototype.hasOwnProperty.call(forecastStationOverrides, id)
+            ? forecastStationOverrides[id]
+            : rawCode;
+
+        let status = "SAFE";
+        if (isOffline && !Object.prototype.hasOwnProperty.call(forecastStationOverrides, id)) {
+            status = "OFFLINE";
+        } else if (typeof getStatusFromCode === "function") {
+            status = getStatusFromCode(effectiveCode);
+        } else {
+            status = effectiveCode >= 3 ? "CRITICAL" : effectiveCode === 2 ? "WARNING" : effectiveCode === 1 ? "ADVISORY" : "SAFE";
+        }
+
+        const markerClass = `marker-${status.toLowerCase()}`;
+
+        const zStreetVal = pickZStreet(station);
+        const depthVal = pickDepthCm(station);
+        const riskVal = pickRiskScore(station);
 
         ["main", "full", "nav"].forEach(prefix => {
-            const useForecast = prefix === "nav"
-                && Object.prototype.hasOwnProperty.call(forecastStationOverrides, id);
-            const effectiveCode = useForecast ? forecastStationOverrides[id] : liveCode;
-            const status = typeof getStatusFromCode === "function"
-                ? getStatusFromCode(effectiveCode) : "SAFE";
-            // Class duy nhất → chấm + 1 vòng pulse cùng màu (CSS keyframes)
-            const markerClass = `map-marker marker-${status.toLowerCase()}`;
-            const statusText = statusLabels[status] || status;
-
             const markerEl = document.getElementById(`marker-${prefix}-${id}`);
             if (markerEl) {
-                markerEl.className = markerClass;
-                // Xóa mọi ring/pulse DOM thừa (nếu bản cũ từng inject)
-                markerEl.querySelectorAll(".marker-pulse, .marker-ring").forEach(n => n.remove());
+                markerEl.className = `map-marker ${markerClass}`;
             }
 
-            const markersBag =
-                prefix === "main" ? mainMarkers :
-                prefix === "full" ? fullscreenMarkers :
-                (typeof navMarkers !== "undefined" ? navMarkers : null);
-            const markerObj = markersBag?.[id];
-            if (!markerObj?.setPopup) return;
+            const popupStatus = document.getElementById(`popup-status-${prefix}-${id}`);
+            if (popupStatus) {
+                popupStatus.className = `popup-status status-pill status-${status.toLowerCase()}`;
+                popupStatus.textContent = statusLabels[status] || status;
+            }
 
-            const loc = typeof getStationLocation === "function" ? getStationLocation(id) : null;
-            const displayName = typeof getStationDisplayName === "function"
-                ? getStationDisplayName(id) : (loc?.backend_name || `Trạm ${id}`);
-            const z = pickZStreet(station);
-            const d = pickDepthCm(station);
-            const r = pickRiskScore(station);
+            const popupZStreet = document.getElementById(`popup-zstreet-${prefix}-${id}`);
+            if (popupZStreet) {
+                popupZStreet.textContent = zStreetVal != null ? Number(zStreetVal).toFixed(2) : "--";
+            }
 
-            const popupHTML = `
-            <div class="popup-station-name">
-                ${displayName}
-                <button class="popup-arrow-btn" onclick="goToStationDetail(${id})">➔</button>
-            </div>
-            <div class="popup-district">📍 ${loc?.street || ""}${loc?.district ? ", " + loc.district : ""}</div>
-            <div class="popup-status status-pill status-${status.toLowerCase()}">${statusText}</div>
-            <div style="margin-top:6px;">
-                <span>Cao độ nền: <b>${z != null ? z.toFixed(2) : "--"}</b> m</span><br>
-                <span>Mực nước ngập: <b>${d != null ? d.toFixed(2) : "--"}</b> cm</span><br>
-                <span>Risk Score: <b>${r != null ? r.toFixed(2) : "--"}</b></span>
-            </div>`;
-            markerObj.setPopup(new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(popupHTML));
+            const popupDepth = document.getElementById(`popup-depth-${prefix}-${id}`);
+            if (popupDepth) {
+                popupDepth.textContent = isOffline || depthVal == null ? "--" : Number(depthVal).toFixed(2);
+            }
+
+            const popupRisk = document.getElementById(`popup-risk-${prefix}-${id}`);
+            if (popupRisk) {
+                popupRisk.textContent = isOffline || riskVal == null ? "--" : Number(riskVal).toFixed(2);
+            }
         });
     });
 }
